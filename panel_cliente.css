@@ -1,0 +1,96 @@
+/* ============================================
+   PANEL_CLIENTE.CSS - Estilos específicos del Dashboard Cliente
+   ============================================ */
+
+.btn-perfil-header {
+    background: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+.btn-perfil-header:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.3);
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 25px;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.tab-btn {
+    padding: 14px 28px;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 3px solid transparent;
+    flex: 1;
+    justify-content: center;
+}
+.tab-btn .material-symbols-outlined {
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+.tab-btn:hover {
+    background: #f8fafc;
+    color: var(--text-main);
+}
+.tab-btn:hover .material-symbols-outlined {
+    color: var(--primary-color);
+}
+.tab-btn.active {
+    background: #ffffff;
+    color: var(--primary-color);
+    border-bottom: 3px solid var(--primary-color);
+}
+.tab-btn.active .material-symbols-outlined {
+    color: var(--primary-color);
+}
+.tab-content {
+    display: none;
+    padding-top: 10px;
+}
+.tab-content.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .tabs {
+        flex-direction: column;
+        border-radius: 12px;
+    }
+    .tab-btn {
+        border-bottom: 1px solid #e2e8f0;
+        border-left: 3px solid transparent;
+        padding: 12px 20px;
+        justify-content: center;
+    }
+    .tab-btn.active {
+        border-bottom: 1px solid #e2e8f0;
+        border-left: 3px solid var(--primary-color);
+    }
+}

@@ -1,0 +1,1162 @@
+/* ============================================================
+   TRATAMIENTOS.CSS
+   Diseño de la sección de tratamientos de OdontoSoft
+============================================================ */
+
+
+/* ============================================================
+   MODAL DE CONFIRMACIÓN
+============================================================ */
+
+.confirm-overlay {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(15, 23, 42, 0.55);
+
+    backdrop-filter: blur(6px);
+
+    z-index: 300;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+}
+
+
+.confirm-overlay.open {
+
+    display: flex;
+
+}
+
+
+.confirm-modal {
+
+    background: #ffffff;
+
+    width: 100%;
+
+    max-width: 450px;
+
+    border-radius: 18px;
+
+    padding: 35px;
+
+    text-align: center;
+
+    box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.18);
+
+    animation:
+        modalFadeIn 0.25s ease;
+}
+
+
+.confirm-icon {
+
+    font-size: 50px;
+
+    margin-bottom: 12px;
+}
+
+
+.confirm-icon.warning {
+
+    color: #f59e0b;
+
+}
+
+
+.confirm-modal h3 {
+
+    font-size: 1.3rem;
+
+    font-weight: 700;
+
+    color: var(--text-main);
+
+    margin-bottom: 10px;
+}
+
+
+.confirm-modal p {
+
+    color: var(--text-muted);
+
+    font-size: 0.95rem;
+
+    margin-bottom: 25px;
+
+    line-height: 1.6;
+}
+
+
+.confirm-modal .tratamiento-info {
+
+    background: #f8fafc;
+
+    padding: 14px 16px;
+
+    border-radius: 10px;
+
+    margin-bottom: 25px;
+
+    border: 1px solid #e2e8f0;
+
+    text-align: left;
+
+    line-height: 1.8;
+}
+
+
+.confirm-modal .tratamiento-info strong {
+
+    color: var(--text-main);
+
+    font-weight: 700;
+}
+
+
+.confirm-modal .tratamiento-info .info-text {
+
+    color: var(--primary-color);
+
+    font-size: 0.9rem;
+
+    font-weight: 700;
+}
+
+
+.confirm-modal .tratamiento-info .nombre-tratamiento {
+
+    color: var(--primary-color);
+
+    font-weight: 600;
+}
+
+
+.confirm-modal .confirm-footer {
+
+    display: flex;
+
+    gap: 12px;
+
+    justify-content: center;
+}
+
+
+.confirm-modal .confirm-footer button {
+
+    padding: 11px 28px;
+
+    border-radius: 10px;
+
+    font-weight: 700;
+
+    font-size: 0.9rem;
+
+    cursor: pointer;
+
+    transition: all 0.25s ease;
+
+    border: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    font-family:
+        'Poppins',
+        'Segoe UI',
+        system-ui,
+        sans-serif;
+}
+
+
+.btn-confirm-cancelar {
+
+    background: #f1f5f9;
+
+    color: var(--text-main);
+}
+
+
+.btn-confirm-cancelar:hover {
+
+    background: #e2e8f0;
+
+    transform: translateY(-2px);
+}
+
+
+.btn-confirm-eliminar {
+
+    background: #ef4444;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+
+.btn-confirm-eliminar:hover {
+
+    background: #dc2626;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+
+.btn-confirm-eliminar:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none !important;
+}
+
+
+/* ============================================================
+   MODAL TRATAMIENTO
+============================================================ */
+
+.modal-overlay {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(15, 23, 42, 0.5);
+
+    backdrop-filter: blur(6px);
+
+    z-index: 200;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+}
+
+
+.modal-overlay.open {
+
+    display: flex;
+}
+
+
+.modal {
+
+    background: #ffffff;
+
+    border-radius: 16px;
+
+    padding: 0 35px;
+
+    width: 100%;
+
+    max-width: 500px;
+
+    max-height: 90vh;
+
+    overflow-y: auto;
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.15);
+
+    animation:
+        modalFadeIn 0.3s ease;
+}
+
+
+.modal::-webkit-scrollbar {
+
+    width: 6px;
+}
+
+
+.modal::-webkit-scrollbar-track {
+
+    background: #f1f5f9;
+
+    border-radius: 10px;
+}
+
+
+.modal::-webkit-scrollbar-thumb {
+
+    background: var(--primary-color);
+
+    border-radius: 10px;
+}
+
+
+@keyframes modalFadeIn {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            scale(0.95)
+            translateY(15px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            scale(1)
+            translateY(0);
+
+    }
+}
+
+
+/* ============================================================
+   TÍTULO DEL MODAL
+============================================================ */
+
+.modal h3 {
+
+    font-size: 1.3rem;
+
+    font-weight: 700;
+
+    color: var(--text-main);
+
+    margin:
+        0 -35px
+        20px
+        -35px;
+
+    padding:
+        18px
+        35px
+        14px
+        35px;
+
+    border-bottom:
+        2px solid #f1f5f9;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    background: #ffffff;
+
+    border-radius:
+        16px
+        16px
+        0
+        0;
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 10;
+}
+
+
+.modal h3 .material-symbols-outlined {
+
+    color: var(--primary-color);
+
+    font-size: 1.6rem;
+}
+
+
+/* ============================================================
+   FORMULARIOS
+============================================================ */
+
+.form-group {
+
+    margin-bottom: 16px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+
+.form-group label {
+
+    font-weight: 600;
+
+    font-size: 0.85rem;
+
+    color: var(--text-main);
+}
+
+
+.form-group label .required {
+
+    color: #ef4444;
+
+    margin-left: 2px;
+}
+
+
+.form-group input,
+.form-group textarea {
+
+    width: 100%;
+
+    padding: 10px 14px;
+
+    border:
+        2px solid #e2e8f0;
+
+    border-radius: 10px;
+
+    font-size: 0.9rem;
+
+    font-family:
+        'Poppins',
+        'Segoe UI',
+        system-ui,
+        sans-serif;
+
+    background: #fafbfc;
+
+    transition:
+        all 0.25s ease;
+
+    box-sizing: border-box;
+
+    outline: none;
+}
+
+
+.form-group input:focus,
+.form-group textarea:focus {
+
+    border-color:
+        var(--primary-color);
+
+    background: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(2, 132, 199, 0.12);
+}
+
+
+.form-group textarea {
+
+    resize: vertical;
+
+    min-height: 70px;
+}
+
+
+/* ============================================================
+   PRECIO COP
+============================================================ */
+
+.precio-input {
+
+    display: flex;
+
+    align-items: center;
+
+    width: 100%;
+
+    min-height: 44px;
+
+    border:
+        2px solid #e2e8f0;
+
+    border-radius: 10px;
+
+    background: #fafbfc;
+
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    transition:
+        all 0.25s ease;
+}
+
+
+.precio-input:focus-within {
+
+    border-color:
+        var(--primary-color);
+
+    background: #ffffff;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(2, 132, 199, 0.12);
+}
+
+
+/* Símbolo $ */
+
+.simbolo-cop {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding:
+        0
+        5px
+        0
+        14px;
+
+    color:
+        var(--text-main);
+
+    font-size: 0.95rem;
+
+    font-weight: 700;
+
+    flex-shrink: 0;
+}
+
+
+/* Input */
+
+.precio-input input {
+
+    flex: 1;
+
+    width: 100%;
+
+    min-width: 0;
+
+    height: 42px;
+
+    border: none !important;
+
+    outline: none !important;
+
+    background: transparent !important;
+
+    box-shadow: none !important;
+
+    padding:
+        10px
+        6px;
+
+    font-size: 0.9rem;
+
+    font-family:
+        'Poppins',
+        'Segoe UI',
+        system-ui,
+        sans-serif;
+
+    color:
+        var(--text-main);
+
+    box-sizing: border-box;
+}
+
+
+.precio-input input::placeholder {
+
+    color:
+        var(--text-muted);
+}
+
+
+.precio-input input:focus {
+
+    border: none !important;
+
+    outline: none !important;
+
+    box-shadow: none !important;
+
+    background: transparent !important;
+}
+
+
+/* COP */
+
+.texto-cop {
+
+    padding:
+        0
+        14px
+        0
+        5px;
+
+    color:
+        var(--text-muted);
+
+    font-size: 0.78rem;
+
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+
+    flex-shrink: 0;
+}
+
+
+/* Ayuda */
+
+.ayuda-precio {
+
+    color:
+        var(--text-muted);
+
+    font-size: 0.75rem;
+
+    line-height: 1.4;
+
+    margin-top: 1px;
+}
+
+
+/* ============================================================
+   PRECIO EN TABLA
+============================================================ */
+
+.precio-tabla {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding:
+        6px
+        10px;
+
+    border-radius: 8px;
+
+    background:
+        #f0f9ff;
+
+    color:
+        var(--primary-color);
+
+    font-weight: 700;
+
+    font-size: 0.85rem;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   FOOTER MODAL
+============================================================ */
+
+.modal-footer {
+
+    display: flex;
+
+    gap: 12px;
+
+    justify-content: flex-end;
+
+    margin:
+        0 -35px;
+
+    padding:
+        14px
+        35px
+        16px;
+
+    border-top:
+        1px solid #f1f5f9;
+
+    background: #ffffff;
+
+    border-radius:
+        0
+        0
+        16px
+        16px;
+
+    position: sticky;
+
+    bottom: 0;
+
+    z-index: 10;
+}
+
+
+.modal-footer button {
+
+    padding:
+        10px
+        22px;
+
+    border-radius: 10px;
+
+    font-weight: 600;
+
+    font-size: 0.85rem;
+
+    cursor: pointer;
+
+    transition:
+        all 0.25s ease;
+
+    border: none;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    font-family:
+        'Poppins',
+        'Segoe UI',
+        system-ui,
+        sans-serif;
+}
+
+
+.btn-cancelar {
+
+    background:
+        #f1f5f9;
+
+    color:
+        var(--text-main);
+}
+
+
+.btn-cancelar:hover {
+
+    background:
+        #e2e8f0;
+
+    transform:
+        translateY(-1px);
+}
+
+
+.btn-guardar {
+
+    background:
+        var(--primary-color);
+
+    color:
+        #ffffff;
+
+    box-shadow:
+        0 2px 8px
+        rgba(2, 132, 199, 0.2);
+}
+
+
+.btn-guardar:hover {
+
+    background:
+        var(--primary-hover);
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 6px 20px
+        rgba(2, 132, 199, 0.3);
+}
+
+
+.btn-guardar:disabled {
+
+    opacity: 0.6;
+
+    cursor: not-allowed;
+
+    transform: none !important;
+}
+
+
+.btn-guardar .spinner {
+
+    animation:
+        spin 1s linear infinite;
+
+    display: inline-block;
+}
+
+
+@keyframes spin {
+
+    0% {
+
+        transform: rotate(0deg);
+
+    }
+
+    100% {
+
+        transform: rotate(360deg);
+
+    }
+}
+
+
+/* ============================================================
+   TABLA
+============================================================ */
+
+.table-container {
+
+    background:
+        #ffffff;
+
+    border-radius:
+        12px;
+
+    box-shadow:
+        0 4px 6px -1px
+        rgba(0, 0, 0, 0.05);
+
+    overflow-x: auto;
+
+    border:
+        1px solid #e2e8f0;
+}
+
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+}
+
+
+thead th {
+
+    background:
+        #f8fafc;
+
+    font-size: 0.75rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+
+    color:
+        #64748b;
+
+    font-weight: 700;
+
+    padding:
+        14px 20px;
+
+    text-align: left;
+}
+
+
+tbody td {
+
+    padding:
+        14px 20px;
+
+    font-size: 0.9rem;
+
+    border-bottom:
+        1px solid #f1f5f9;
+
+    vertical-align: middle;
+}
+
+
+tbody tr:hover td {
+
+    background:
+        #f8fafc;
+}
+
+
+tbody tr:last-child td {
+
+    border-bottom: none;
+}
+
+
+/* ============================================================
+   BOTONES DE ACCIÓN
+============================================================ */
+
+.btn-icon {
+
+    background: none;
+
+    border: none;
+
+    color:
+        #94a3b8;
+
+    cursor: pointer;
+
+    padding:
+        6px 8px;
+
+    border-radius: 8px;
+
+    transition:
+        all 0.2s;
+}
+
+
+.btn-icon:hover {
+
+    color:
+        var(--primary-color);
+
+    background:
+        #f1f5f9;
+}
+
+
+.btn-danger {
+
+    background: none;
+
+    border: none;
+
+    color:
+        #ef4444;
+
+    cursor: pointer;
+
+    padding:
+        6px 8px;
+
+    border-radius: 8px;
+
+    transition:
+        all 0.2s;
+}
+
+
+.btn-danger:hover {
+
+    background:
+        #fee2e2;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 768px) {
+
+    .modal {
+
+        padding:
+            0 18px;
+
+        max-width: 100%;
+    }
+
+
+    .modal h3 {
+
+        font-size: 1.1rem;
+
+        margin:
+            0 -18px
+            16px
+            -18px;
+
+        padding:
+            14px
+            18px
+            10px;
+    }
+
+
+    .modal-footer {
+
+        margin:
+            0 -18px;
+
+        padding:
+            12px
+            18px
+            14px;
+
+        flex-direction:
+            column-reverse;
+    }
+
+
+    .modal-footer button {
+
+        width: 100%;
+
+        justify-content: center;
+    }
+
+
+    .confirm-modal {
+
+        padding:
+            28px 20px;
+    }
+
+
+    .confirm-modal .confirm-footer {
+
+        flex-direction:
+            column;
+    }
+
+
+    .confirm-modal .confirm-footer button {
+
+        width: 100%;
+
+        justify-content: center;
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    .modal {
+
+        padding:
+            0 16px;
+    }
+
+
+    .modal h3 {
+
+        font-size: 1rem;
+
+        margin:
+            0 -16px
+            14px
+            -16px;
+
+        padding:
+            12px
+            16px
+            8px;
+    }
+
+
+    .modal h3 .material-symbols-outlined {
+
+        font-size:
+            1.3rem;
+    }
+
+
+    .modal-footer {
+
+        margin:
+            0 -16px;
+
+        padding:
+            10px
+            16px
+            12px;
+    }
+
+
+    .form-group input,
+    .form-group textarea {
+
+        font-size:
+            0.85rem;
+
+        padding:
+            8px 12px;
+    }
+
+
+    .precio-input {
+
+        min-height:
+            40px;
+    }
+
+
+    .simbolo-cop {
+
+        padding-left:
+            12px;
+
+        padding-right:
+            5px;
+
+        font-size:
+            0.85rem;
+    }
+
+
+    .precio-input input {
+
+        height:
+            38px;
+
+        font-size:
+            0.85rem;
+
+        padding:
+            8px 5px;
+    }
+
+
+    .texto-cop {
+
+        padding-right:
+            10px;
+
+        font-size:
+            0.7rem;
+    }
+
+
+    .precio-tabla {
+
+        font-size:
+            0.78rem;
+
+        padding:
+            5px 7px;
+    }
+
+}

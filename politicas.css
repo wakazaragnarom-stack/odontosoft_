@@ -1,0 +1,84 @@
+/* ============================================
+   POLITICAS.CSS - Estilos para páginas de políticas
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: #161616;
+}
+
+.contenedor {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 40px;
+}
+
+.tarjeta {
+  background: hsl(180, 29%, 97%);
+  max-width: 850px;
+  width: 100%;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+}
+
+.tarjeta h1 {
+  color: #0d6efd;
+  margin-bottom: 25px;
+  border-bottom: 3px solid #0d6efd;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.tarjeta p {
+  color: #555;
+  line-height: 1.8;
+  text-align: justify;
+  margin-bottom: 18px;
+}
+
+.tarjeta a {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 12px 25px;
+  background: #0d6efd;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: .3s;
+}
+
+.tarjeta a:hover {
+  background: #084298;
+}
+
+.imagen-politica {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 25px 0 35px;
+}
+
+.imagen-politica img {
+  width: 100%;
+  max-width: 500px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 20px;
+  border: 4px solid #ffffff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.20);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.imagen-politica img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.30);
+}
