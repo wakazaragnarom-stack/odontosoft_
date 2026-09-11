@@ -8,9 +8,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import HTTPException, Request, status
+from fastapi import HTTPException, Request, status, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+from database import SessionLocal
+import models
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_SECRET = os.getenv("JWT_SECRET")
@@ -27,7 +30,6 @@ PUBLIC_PATHS = {
     "/auth/login", "/auth/registro", "/auth/solicitar-reset", "/auth/reset-password",
 }
 
-# Política por módulo. Se complementa con autorización a nivel de recurso en los routers.
 MODULE_ROLES = {
     "/usuarios": {"superadmin", "clinic_admin"},
     "/roles": {"superadmin", "clinic_admin"},
@@ -35,10 +37,10 @@ MODULE_ROLES = {
     "/consultorios": {"superadmin", "clinic_admin", "dentist"},
     "/odontologos": {"superadmin", "clinic_admin", "dentist"},
     "/tratamientos": {"superadmin", "clinic_admin", "dentist"},
-    "/pacientes": {"superadmin", "clinic_admin", "dentist"},
-    "/historias-clinicas": {"superadmin", "clinic_admin", "dentist"},
-    "/historias-clinicas-detalladas": {"superadmin", "clinic_admin", "dentist"},
-    "/odontogramas": {"superadmin", "clinic_admin", "dentist"},
+    "/pacientes": {"superadmin", "clinic_admin", "dentist", "patient"},
+    "/historias-clinicas": {"superadmin", "clinic_admin", "dentist", "patient"},
+    "/historias-clinicas-detalladas": {"superadmin", "clinic_admin", "dentist", "patient"},
+    "/odontogramas": {"superadmin", "clinic_admin", "dentist", "patient"},
     "/citas": {"superadmin", "clinic_admin", "dentist", "patient"},
     "/recordatorios": {"superadmin", "clinic_admin", "dentist"},
     "/pagos": {"superadmin", "clinic_admin"},
@@ -101,8 +103,50 @@ def require_roles(*roles: str):
     return dependency
 
 
+def require_staff():
+    return require_roles("superadmin", "clinic_admin", "dentist")
+
+
+def user_patient_ids(db, user_id: int) -> set[int]:
+    rows = db.query(models.usuario_paciente.c.id_paciente).filter(
+        models.usuario_paciente.c.id_usuario == user_id
+    ).all()
+    return {int(row[0]) for row in rows}
+
+
+def require_patient_resource(path_param: str):
+    """Autoriza una ruta que contiene un id de paciente.
+
+    Personal clínico puede acceder según la política del módulo. Un paciente
+    sólo puede acceder a recursos vinculados a su propio usuario.
+    """
+    def dependency(request: Request, db=Depends(lambda: None)):
+        user = get_current_user(request)
+        if user["role"] != "patient":
+            return user
+        raw_id = request.path_params.get(path_param)
+        try:
+            patient_id = int(raw_id)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+        # Abrimos una sesión sólo para comprobar el vínculo usuario-paciente.
+        session = SessionLocal()
+        try:
+            if patient_id not in user_patient_ids(session, int(user["sub"])):
+                raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+        finally:
+            session.close()
+        return user
+    return dependency
+
+
+def require_resource_patient_from_path(patient_path: str):
+    """Alias explícito para dependencias de rutas clínicas con paciente_id."""
+    return require_patient_resource(patient_path)
+
+
 def module_allowed(path: str, role: str) -> bool:
-    """Comprueba la política base del módulo sin sustituir la autorización por recurso."""
+    """Comprueba la política base del módulo; no sustituye la autorización por recurso."""
     normalized = normalize_role(role)
     for prefix, roles in MODULE_ROLES.items():
         if path == prefix or path.startswith(prefix + "/"):
