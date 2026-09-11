@@ -27,6 +27,25 @@ PUBLIC_PATHS = {
     "/auth/login", "/auth/registro", "/auth/solicitar-reset", "/auth/reset-password",
 }
 
+# Política por módulo. Se complementa con autorización a nivel de recurso en los routers.
+MODULE_ROLES = {
+    "/usuarios": {"superadmin", "clinic_admin"},
+    "/roles": {"superadmin", "clinic_admin"},
+    "/proveedores": {"superadmin", "clinic_admin", "proveedores"},
+    "/consultorios": {"superadmin", "clinic_admin", "dentist"},
+    "/odontologos": {"superadmin", "clinic_admin", "dentist"},
+    "/tratamientos": {"superadmin", "clinic_admin", "dentist"},
+    "/pacientes": {"superadmin", "clinic_admin", "dentist"},
+    "/historias-clinicas": {"superadmin", "clinic_admin", "dentist"},
+    "/historias-clinicas-detalladas": {"superadmin", "clinic_admin", "dentist"},
+    "/odontogramas": {"superadmin", "clinic_admin", "dentist"},
+    "/citas": {"superadmin", "clinic_admin", "dentist", "patient"},
+    "/recordatorios": {"superadmin", "clinic_admin", "dentist"},
+    "/pagos": {"superadmin", "clinic_admin"},
+    "/facturas": {"superadmin", "clinic_admin", "patient"},
+    "/servicios": {"superadmin", "clinic_admin", "dentist", "patient"},
+}
+
 ROLE_ALIASES = {
     "Paciente": "patient", "paciente": "patient",
     "Odontologo": "dentist", "Odontólogo": "dentist", "odontologo": "dentist", "odontólogo": "dentist",
@@ -58,9 +77,9 @@ def decode_access_token(token: str) -> dict:
             options={"require": ["sub", "email", "role", "iat", "exp", "jti", "type"]},
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida o expirada", headers={"WWW-Authenticate": "Bearer"}) from exc
+        raise HTTPException(status_code=401, detail="Sesión inválida o expirada", headers={"WWW-Authenticate": "Bearer"}) from exc
     if payload.get("type") != "access":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tipo de token no válido", headers={"WWW-Authenticate": "Bearer"})
+        raise HTTPException(status_code=401, detail="Tipo de token no válido", headers={"WWW-Authenticate": "Bearer"})
     payload["role"] = normalize_role(str(payload["role"]))
     return payload
 
@@ -82,6 +101,15 @@ def require_roles(*roles: str):
     return dependency
 
 
+def module_allowed(path: str, role: str) -> bool:
+    """Comprueba la política base del módulo sin sustituir la autorización por recurso."""
+    normalized = normalize_role(role)
+    for prefix, roles in MODULE_ROLES.items():
+        if path == prefix or path.startswith(prefix + "/"):
+            return normalized in roles
+    return True
+
+
 class JWTAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.method == "OPTIONS" or request.url.path in PUBLIC_PATHS:
@@ -94,4 +122,6 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             request.state.user = decode_access_token(token.strip())
         except HTTPException as exc:
             return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers or {})
+        if not module_allowed(request.url.path, request.state.user["role"]):
+            return JSONResponse(status_code=403, content={"detail": "No tienes permisos para acceder a este módulo"})
         return await call_next(request)
