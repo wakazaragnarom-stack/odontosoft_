@@ -8,17 +8,31 @@ import models
 import schemas
 from database import get_db
 from notifications import NotificationService
-from security import require_appointment_resource, require_patient_resource, require_staff
+from security import dentist_id_for_user, require_appointment_resource, require_patient_resource, require_roles, require_staff
 
 router = APIRouter(prefix="/citas", tags=["Citas"])
 
+ESTADOS_CITA = {"Pendiente", "Confirmada", "Llegó", "En curso", "Completada", "Cancelada", "No asistió"}
+
+
+def _require_dentist_appointment_owner(user: dict, db: Session, appointment: models.Cita) -> None:
+    if user["role"] == "dentist" and dentist_id_for_user(db, user) != int(appointment.id_odontologo):
+        raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+
+
 @router.get("/", response_model=List[schemas.CitaOut])
-def get_citas(db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
-    return (
+def get_citas(db: Session = Depends(get_db), user: dict = Depends(require_staff())):
+    query = (
         db.query(models.Cita)
         .options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo))
-        .all()
     )
+    if user["role"] == "dentist":
+        dentist_id = dentist_id_for_user(db, user)
+        if dentist_id is None:
+            return []
+        query = query.filter(models.Cita.id_odontologo == dentist_id)
+    return query.all()
+
 
 @router.get("/{id}", response_model=schemas.CitaOut)
 def get_cita(id: int, db: Session = Depends(get_db), _user: dict = Depends(require_appointment_resource("id"))):
@@ -31,6 +45,7 @@ def get_cita(id: int, db: Session = Depends(get_db), _user: dict = Depends(requi
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
     return cita
+
 
 @router.get("/paciente/{paciente_id}", response_model=List[schemas.CitaOut])
 def get_citas_por_paciente(
@@ -45,8 +60,11 @@ def get_citas_por_paciente(
         .all()
     )
 
+
 @router.get("/odontologo/{odontologo_id}", response_model=List[schemas.CitaOut])
-def get_citas_por_odontologo(odontologo_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def get_citas_por_odontologo(odontologo_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
+    if user["role"] == "dentist" and dentist_id_for_user(db, user) != odontologo_id:
+        raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
     return (
         db.query(models.Cita)
         .options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo))
@@ -54,17 +72,24 @@ def get_citas_por_odontologo(odontologo_id: int, db: Session = Depends(get_db), 
         .all()
     )
 
+
 @router.get("/consultorio/{consultorio_id}", response_model=List[schemas.CitaOut])
-def get_citas_por_consultorio(consultorio_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
-    return (
+def get_citas_por_consultorio(consultorio_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
+    query = (
         db.query(models.Cita)
         .options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo))
         .filter(models.Cita.id_consultorio == consultorio_id)
-        .all()
     )
+    if user["role"] == "dentist":
+        dentist_id = dentist_id_for_user(db, user)
+        if dentist_id is None:
+            return []
+        query = query.filter(models.Cita.id_odontologo == dentist_id)
+    return query.all()
+
 
 @router.post("/", response_model=schemas.CitaOut, status_code=status.HTTP_201_CREATED)
-def create_cita(data: schemas.CitaCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def create_cita(data: schemas.CitaCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == data.id_paciente).first()
     if not paciente:
         raise HTTPException(status_code=400, detail="El paciente no existe")
@@ -74,6 +99,12 @@ def create_cita(data: schemas.CitaCreate, background_tasks: BackgroundTasks, db:
     consultorio = db.query(models.Consultorio).filter(models.Consultorio.id_consultorio == data.id_consultorio).first()
     if not consultorio:
         raise HTTPException(status_code=400, detail="El consultorio no existe")
+    if user["role"] == "dentist":
+        if dentist_id_for_user(db, user) != data.id_odontologo:
+            raise HTTPException(status_code=403, detail="Un odontólogo solo puede agendar para su propia agenda")
+        if data.id_paciente not in {c.id_paciente for c in db.query(models.Cita.id_paciente).filter(models.Cita.id_odontologo == data.id_odontologo).all()}:
+            # Permite la primera cita solamente si el odontólogo es el profesional asignado.
+            pass
 
     nueva = models.Cita(**data.model_dump())
     db.add(nueva)
@@ -106,8 +137,9 @@ def create_cita(data: schemas.CitaCreate, background_tasks: BackgroundTasks, db:
         background_tasks.add_task(NotificationService.send_email, correo_paciente, "Confirmación de Cita Odontológica - OdontoSoft", cuerpo_html)
     return cita_creada
 
+
 @router.put("/{id}", response_model=schemas.CitaOut)
-def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     cita = (
         db.query(models.Cita)
         .options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo))
@@ -116,6 +148,7 @@ def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundT
     )
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
 
     update_data = data.model_dump(exclude_unset=True)
     if "id_paciente" in update_data and not db.query(models.Paciente).filter(models.Paciente.id_paciente == update_data["id_paciente"]).first():
@@ -124,6 +157,8 @@ def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundT
         raise HTTPException(status_code=400, detail="El odontólogo no existe")
     if "id_consultorio" in update_data and not db.query(models.Consultorio).filter(models.Consultorio.id_consultorio == update_data["id_consultorio"]).first():
         raise HTTPException(status_code=400, detail="El consultorio no existe")
+    if user["role"] == "dentist" and "id_odontologo" in update_data:
+        _require_dentist_appointment_owner(user, db, type("Obj", (), {"id_odontologo": update_data["id_odontologo"]})())
 
     for key, value in update_data.items():
         setattr(cita, key, value)
@@ -149,8 +184,29 @@ def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundT
         background_tasks.add_task(NotificationService.send_email, correo_paciente, "Actualización de Cita - OdontoSoft", cuerpo_html)
     return cita_actualizada
 
+
+@router.patch("/{id}/estado", response_model=schemas.CitaOut)
+def update_estado_cita(id: int, estado: dict, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
+    cita = (
+        db.query(models.Cita)
+        .options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo))
+        .filter(models.Cita.id_cita == id)
+        .first()
+    )
+    if not cita:
+        raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
+    nuevo_estado = str(estado.get("estado", "")).strip()
+    if nuevo_estado not in ESTADOS_CITA:
+        raise HTTPException(status_code=400, detail="Estado de cita no válido")
+    cita.estado = nuevo_estado
+    db.commit()
+    db.refresh(cita)
+    return cita
+
+
 @router.delete("/{id}")
-def delete_cita(id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def delete_cita(id: int, db: Session = Depends(get_db), user: dict = Depends(require_roles("superadmin", "clinic_admin"))):
     cita = db.query(models.Cita).filter(models.Cita.id_cita == id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
@@ -158,18 +214,22 @@ def delete_cita(id: int, db: Session = Depends(get_db), _user: dict = Depends(re
     db.commit()
     return {"mensaje": "Cita eliminada correctamente", "id_cita": id}
 
+
 @router.get("/{cita_id}/tratamientos", response_model=List[schemas.TratamientoOut])
-def get_tratamientos_de_cita(cita_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def get_tratamientos_de_cita(cita_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     cita = db.query(models.Cita).options(selectinload(models.Cita.tratamientos)).filter(models.Cita.id_cita == cita_id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
     return cita.tratamientos
 
+
 @router.post("/{cita_id}/tratamientos/{tratamiento_id}")
-def asociar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def asociar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     cita = db.query(models.Cita).filter(models.Cita.id_cita == cita_id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
     tratamiento = db.query(models.Tratamiento).filter(models.Tratamiento.id_tratamiento == tratamiento_id).first()
     if not tratamiento:
         raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
@@ -180,11 +240,13 @@ def asociar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends
     db.refresh(cita)
     return {"mensaje": "Tratamiento asociado correctamente", "id_cita": cita_id, "id_tratamiento": tratamiento_id}
 
+
 @router.put("/{cita_id}/tratamientos/{tratamiento_id}")
-def actualizar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def actualizar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     cita = db.query(models.Cita).filter(models.Cita.id_cita == cita_id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
     tratamiento = db.query(models.Tratamiento).filter(models.Tratamiento.id_tratamiento == tratamiento_id).first()
     if not tratamiento:
         raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
@@ -194,11 +256,13 @@ def actualizar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depe
     db.refresh(cita)
     return {"mensaje": "Tratamiento actualizado correctamente", "id_cita": cita_id, "id_tratamiento": tratamiento_id}
 
+
 @router.delete("/{cita_id}/tratamientos/{tratamiento_id}")
-def eliminar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
+def eliminar_tratamiento(cita_id: int, tratamiento_id: int, db: Session = Depends(get_db), user: dict = Depends(require_staff())):
     cita = db.query(models.Cita).filter(models.Cita.id_cita == cita_id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
+    _require_dentist_appointment_owner(user, db, cita)
     tratamiento = db.query(models.Tratamiento).filter(models.Tratamiento.id_tratamiento == tratamiento_id).first()
     if not tratamiento:
         raise HTTPException(status_code=404, detail="Tratamiento no encontrado")
