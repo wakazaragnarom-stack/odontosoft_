@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+import auth_schemas
 import models
 import schemas
 from database import get_db
@@ -13,7 +14,7 @@ from utils import generar_documento_unico, hash_password, needs_password_rehash,
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 
-@router.post("/login", response_model=schemas.LoginResponse)
+@router.post("/login", response_model=auth_schemas.SecureLoginResponse)
 def login(data: schemas.LoginRequest, db: Session = Depends(get_db)):
     email = str(data.correo).strip().lower()
     usuario = db.query(models.Usuario).filter(models.Usuario.correo == email).first()
