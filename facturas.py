@@ -3,30 +3,39 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
+from security import require_roles
 
 router = APIRouter(prefix="/facturas", tags=["Facturas"])
+STAFF = Depends(require_roles("superadmin", "clinic_admin"))
+
 
 @router.get("/", response_model=List[schemas.FacturaOut])
-def get_facturas(db: Session = Depends(get_db)):
+def get_facturas(db: Session = Depends(get_db), _user: dict = STAFF):
     return db.query(models.Factura).all()
 
+
 @router.get("/{id}", response_model=schemas.FacturaOut)
-def get_factura(id: int, db: Session = Depends(get_db)):
+def get_factura(id: int, db: Session = Depends(get_db), _user: dict = STAFF):
     f = db.query(models.Factura).filter(models.Factura.id_factura == id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     return f
 
+
 @router.post("/", response_model=schemas.FacturaOut, status_code=201)
-def create_factura(data: schemas.FacturaCreate, db: Session = Depends(get_db)):
+def create_factura(data: schemas.FacturaCreate, db: Session = Depends(get_db), _user: dict = STAFF):
+    pago = db.query(models.Pago).filter(models.Pago.id_pago == data.id_pago).first()
+    if not pago:
+        raise HTTPException(status_code=400, detail="El pago no existe")
     nuevo = models.Factura(**data.model_dump())
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
     return nuevo
 
+
 @router.put("/{id}", response_model=schemas.FacturaOut)
-def update_factura(id: int, data: schemas.FacturaCreate, db: Session = Depends(get_db)):
+def update_factura(id: int, data: schemas.FacturaCreate, db: Session = Depends(get_db), _user: dict = STAFF):
     f = db.query(models.Factura).filter(models.Factura.id_factura == id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -36,8 +45,9 @@ def update_factura(id: int, data: schemas.FacturaCreate, db: Session = Depends(g
     db.refresh(f)
     return f
 
+
 @router.delete("/{id}")
-def delete_factura(id: int, db: Session = Depends(get_db)):
+def delete_factura(id: int, db: Session = Depends(get_db), _user: dict = STAFF):
     f = db.query(models.Factura).filter(models.Factura.id_factura == id).first()
     if not f:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
