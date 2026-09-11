@@ -31,7 +31,6 @@ export interface User {
   avatarUrl?: string;
   createdAt: string;
   documento?: string;
-  // Specific dentist properties
   specialty?: string;
   licenseNumber?: string;
   id_consultorio?: string;
@@ -68,7 +67,7 @@ export interface DentistProfile {
   licenseNumber: string;
   id_consultorio?: string;
   consultorioNombre?: string;
-  workingDays: number[]; // 1 = Monday ... 6 = Saturday
+  workingDays: number[];
   workingHours: { start: string; end: string };
   googleCalendarLinked: boolean;
   googleEmail?: string;
@@ -76,10 +75,10 @@ export interface DentistProfile {
   avatarUrl?: string;
 }
 
-export type AppointmentStatus = 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
+export type AppointmentStatus = 'scheduled' | 'confirmed' | 'arrived' | 'in_progress' | 'completed' | 'cancelled' | 'no_show';
 
 export interface ToothCondition {
-  toothNumber: number; // FDI 11-48
+  toothNumber: number;
   status: 'healthy' | 'caries' | 'filled' | 'crown' | 'missing' | 'implant' | 'root_canal';
   notes?: string;
 }
@@ -106,10 +105,10 @@ export interface PatientRecord {
   tenantId: string;
   nombre: string;
   apellido: string;
-  name: string; // compatibility helper (nombre + apellido)
+  name: string;
   email: string;
   phone: string;
-  documento: string; // Unique National Identity Document
+  documento: string;
   birthDate?: string;
   fecha_nacimiento?: string;
   genero?: string;
@@ -150,7 +149,7 @@ export interface Factura {
   id_pago: string;
   fecha_emision: string;
   subtotal: number;
-  impuesto: number; // IVA 19% or regional tax
+  impuesto: number;
   total: number;
 }
 
@@ -178,8 +177,8 @@ export interface Appointment {
   consultorioNombre?: string;
   treatment: string;
   tratamientosIds?: string[];
-  date: string; // YYYY-MM-DD
-  time: string; // HH:mm
+  date: string;
+  time: string;
   durationMinutes: number;
   status: AppointmentStatus;
   notes?: string;
@@ -228,7 +227,7 @@ export interface EmailLog {
   fecha_envio: string;
   estado: 'Enviado con éxito' | 'Simulado (Sin credenciales)' | 'Pendiente' | 'Fallido';
   mensajeId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SaaSMetrics {
