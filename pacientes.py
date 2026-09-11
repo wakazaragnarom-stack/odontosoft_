@@ -11,7 +11,7 @@ import models
 import schemas
 
 from database import get_db
-from security import require_patient_resource, require_staff
+from security import dentist_patient_ids, require_patient_resource, require_staff
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 
@@ -19,18 +19,21 @@ router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 @router.get("/", response_model=List[schemas.PacienteOut])
 def get_pacientes(
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_staff()),
+    user: dict = Depends(require_staff()),
 ):
     try:
-        pacientes = (
+        query = (
             db.query(models.Paciente)
             .join(models.usuario_paciente, models.usuario_paciente.c.id_paciente == models.Paciente.id_paciente)
             .join(models.Usuario, models.Usuario.id_usuario == models.usuario_paciente.c.id_usuario)
             .filter(models.Usuario.rol == "Paciente", models.Usuario.estado == "Activo")
-            .distinct()
-            .all()
         )
-        return pacientes
+        if user["role"] == "dentist":
+            ids = dentist_patient_ids(db, user)
+            if not ids:
+                return []
+            query = query.filter(models.Paciente.id_paciente.in_(ids))
+        return query.distinct().all()
     except Exception as e:
         print(f"❌ Error al obtener pacientes: {str(e)}")
         raise HTTPException(status_code=500, detail="Error al obtener pacientes")
@@ -70,7 +73,6 @@ def create_paciente(
     if paciente_existente:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Documento ya registrado")
 
-    # Nunca persistir una contraseña en texto plano en la tabla paciente.
     payload = data.model_dump(exclude={"contrasena_plano"})
     nuevo_paciente = models.Paciente(**payload)
     try:
@@ -96,7 +98,6 @@ def update_paciente(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
 
     update_data = data.model_dump(exclude_unset=True)
-    # El campo legado sólo era texto plano; no debe volver a persistirse.
     update_data.pop("contrasena_plano", None)
 
     if "documento" in update_data:
