@@ -3,28 +3,35 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
+from security import require_patient_resource, require_staff
 
 router = APIRouter(prefix="/historias-clinicas", tags=["Historias Clínicas"])
 
 @router.get("/", response_model=List[schemas.HistoriaClinicaOut])
-def get_historias(db: Session = Depends(get_db)):
+def get_historias(db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
     return db.query(models.HistoriaClinica).all()
 
 @router.get("/paciente/{paciente_id}", response_model=List[schemas.HistoriaClinicaOut])
-def get_historias_por_paciente(paciente_id: int, db: Session = Depends(get_db)):
-    return db.query(models.HistoriaClinica).filter(
-        models.HistoriaClinica.id_paciente == paciente_id
-    ).all()
+def get_historias_por_paciente(
+    paciente_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_patient_resource("paciente_id")),
+):
+    return db.query(models.HistoriaClinica).filter(models.HistoriaClinica.id_paciente == paciente_id).all()
 
 @router.get("/{id}", response_model=schemas.HistoriaClinicaOut)
-def get_historia(id: int, db: Session = Depends(get_db)):
+def get_historia(
+    id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_staff()),
+):
     h = db.query(models.HistoriaClinica).filter(models.HistoriaClinica.id_historia == id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Historia clínica no encontrada")
     return h
 
 @router.post("/", response_model=schemas.HistoriaClinicaOut, status_code=201)
-def create_historia(data: schemas.HistoriaClinicaCreate, db: Session = Depends(get_db)):
+def create_historia(data: schemas.HistoriaClinicaCreate, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
     nuevo = models.HistoriaClinica(**data.model_dump())
     db.add(nuevo)
     db.commit()
@@ -32,7 +39,7 @@ def create_historia(data: schemas.HistoriaClinicaCreate, db: Session = Depends(g
     return nuevo
 
 @router.put("/{id}", response_model=schemas.HistoriaClinicaOut)
-def update_historia(id: int, data: schemas.HistoriaClinicaCreate, db: Session = Depends(get_db)):
+def update_historia(id: int, data: schemas.HistoriaClinicaCreate, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
     h = db.query(models.HistoriaClinica).filter(models.HistoriaClinica.id_historia == id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Historia clínica no encontrada")
@@ -43,7 +50,7 @@ def update_historia(id: int, data: schemas.HistoriaClinicaCreate, db: Session = 
     return h
 
 @router.delete("/{id}")
-def delete_historia(id: int, db: Session = Depends(get_db)):
+def delete_historia(id: int, db: Session = Depends(get_db), _user: dict = Depends(require_staff())):
     h = db.query(models.HistoriaClinica).filter(models.HistoriaClinica.id_historia == id).first()
     if not h:
         raise HTTPException(status_code=404, detail="Historia clínica no encontrada")
