@@ -13,6 +13,7 @@ import type {
   Tenant,
   Tratamiento,
 } from '../types';
+import { updateEstadoCita, updateOdontograma } from '../api.js';
 
 export interface StoreState {
   tenants: Tenant[];
@@ -38,27 +39,11 @@ const seedTenant: Tenant = {
 
 const state: StoreState = {
   tenants: [seedTenant],
-  dentists: [{
-    id: 'dent-1', userId: 'usr-dentist', tenantId: 'tenant-1', name: 'Dra. Laura Gómez',
-    email: 'dentista@odontosoft.io', phone: '+57 301 111 1111', specialty: 'Odontología General',
-    licenseNumber: 'RM-10001', id_consultorio: 'cons-1', consultorioNombre: 'Consultorio 1',
-    workingDays: [1, 2, 3, 4, 5], workingHours: { start: '08:00', end: '18:00' },
-    googleCalendarLinked: false, notifyByEmail: true
-  }],
+  dentists: [],
   appointments: [],
-  patients: [{
-    id: 'pat-1', tenantId: 'tenant-1', nombre: 'Juan', apellido: 'Pérez', name: 'Juan Pérez',
-    email: 'juan.perez@example.com', phone: '+57 302 222 2222', documento: '100000001',
-    birthDate: '1990-05-10', fecha_nacimiento: '1990-05-10', genero: 'M',
-    odontogram: Array.from({ length: 32 }, (_, i) => ({ toothNumber: 11 + i, status: 'healthy' as const })),
-    clinicalEvolution: []
-  }],
-  consultorios: [{ id_consultorio: 'cons-1', tenantId: 'tenant-1', nombre: 'Consultorio 1', ubicacion: 'Piso 1', numero_sala: '01' }],
-  tratamientos: [
-    { id_tratamiento: 't-1', tenantId: 'tenant-1', nombre: 'Evaluación y Diagnóstico Inicial', descripcion: 'Valoración clínica y odontograma.', costo: 40, duracion_estimada: '30 minutos' },
-    { id_tratamiento: 't-2', tenantId: 'tenant-1', nombre: 'Limpieza y Profilaxis', descripcion: 'Profilaxis y pulido dental.', costo: 50, duracion_estimada: '45 minutos' },
-    { id_tratamiento: 't-3', tenantId: 'tenant-1', nombre: 'Restauración', descripcion: 'Restauración dental.', costo: 90, duracion_estimada: '60 minutos' }
-  ],
+  patients: [],
+  consultorios: [],
+  tratamientos: [],
   proveedores: [],
   emailLogs: []
 };
@@ -70,10 +55,36 @@ const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 export const getStoreState = (): StoreState => clone(state);
 export const subscribeToStore = (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); };
 
+export function applyBackendState(data: Partial<StoreState>) {
+  if (data.patients) state.patients = clone(data.patients);
+  if (data.dentists) state.dentists = clone(data.dentists);
+  if (data.appointments) state.appointments = clone(data.appointments);
+  if (data.tratamientos) state.tratamientos = clone(data.tratamientos);
+  if (data.proveedores) state.proveedores = clone(data.proveedores);
+  emit();
+}
+
+export async function hydrateFromBackend(loader: () => Promise<Partial<StoreState>>) {
+  const data = await loader();
+  applyBackendState(data);
+  return getStoreState();
+}
+
 export function updateAppointmentStatus(id: string, status: AppointmentStatus): Appointment {
   const appointment = state.appointments.find((item) => item.id === id);
   if (!appointment) throw new Error('Cita no encontrada');
-  appointment.status = status; emit(); return clone(appointment);
+  appointment.status = status;
+  emit();
+  const backendId = Number(id);
+  const backendStatusMap: Record<string, string> = {
+    scheduled: 'Pendiente', confirmed: 'Confirmada', arrived: 'Llegó', in_progress: 'En curso', completed: 'Completada', cancelled: 'Cancelada', no_show: 'No asistió'
+  };
+  if (Number.isInteger(backendId) && backendId > 0) {
+    void updateEstadoCita(backendId, backendStatusMap[status] || status).catch(() => {
+      emit();
+    });
+  }
+  return clone(appointment);
 }
 
 export function bookAppointment(input: Omit<Appointment, 'id' | 'createdAt' | 'status' | 'googleCalendarSynced' | 'emailNotificationSent'> & Partial<Pick<Appointment, 'status' | 'googleCalendarSynced' | 'emailNotificationSent'>>): Appointment {
@@ -87,7 +98,13 @@ export function updateToothStatus(patientId: string, toothNumber: number, status
   const tooth = patient.odontogram.find((item) => item.toothNumber === toothNumber);
   if (tooth) { tooth.status = status; tooth.notes = notes; }
   else patient.odontogram.push({ toothNumber, status, notes });
-  emit(); return clone(patient);
+  emit();
+  const backendId = Number(patientId);
+  if (Number.isInteger(backendId) && backendId > 0) {
+    const dientes = Object.fromEntries(patient.odontogram.map((item) => [String(item.toothNumber), { status: item.status, notes: item.notes }]));
+    void updateOdontograma(backendId, { id_paciente: backendId, dientes }).catch(() => emit());
+  }
+  return clone(patient);
 }
 
 export function addClinicalEvolutionNote(patientId: string, entry: PatientRecord['clinicalEvolution'][number]) {
@@ -134,11 +151,8 @@ export function dispararRecordatorios24h(tenantId?: string) {
 }
 
 export function toggleTenantStatus(id: string) { const tenant = state.tenants.find((t) => t.id === id); if (!tenant) throw new Error('Clínica no encontrada'); tenant.status = tenant.status === 'suspended' ? 'active' : 'suspended'; emit(); return clone(tenant); }
-
 export function createTenant(input: Omit<Tenant, 'id' | 'licenseToken' | 'createdAt'>) { const tenant: Tenant = { ...input, id: uid('tenant'), licenseToken: `OS-${Math.random().toString(36).slice(2,10).toUpperCase()}`, createdAt: now() }; state.tenants.push(tenant); emit(); return clone(tenant); }
-
 export function getSaaSMetrics(): SaaSMetrics { return { totalTenants: state.tenants.length, activeTenants: state.tenants.filter((t) => t.status === 'active').length, suspendedTenants: state.tenants.filter((t) => t.status === 'suspended').length, totalDentists: state.dentists.length, totalAppointments: state.appointments.length, monthlyRecurringRevenue: state.tenants.reduce((sum,t) => sum+t.monthlyFee,0) }; }
-
 export function createProveedor(input: Omit<Proveedor, 'id'>) { const item = { ...input, id: uid('prov') }; state.proveedores.push(item); emit(); return clone(item); }
 export function updateProveedor(id: string, patch: Partial<Proveedor>) { const item = state.proveedores.find((p) => p.id === id); if (!item) throw new Error('Proveedor no encontrado'); Object.assign(item, patch); emit(); return clone(item); }
 export function deleteProveedor(id: string) { state.proveedores = state.proveedores.filter((p) => p.id !== id); emit(); }
