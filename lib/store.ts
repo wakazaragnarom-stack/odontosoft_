@@ -53,7 +53,10 @@ const emit = () => listeners.forEach((listener) => listener());
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 export const getStoreState = (): StoreState => clone(state);
-export const subscribeToStore = (listener: () => void) => { listeners.add(listener); return () => listeners.delete(listener); };
+export const subscribeToStore = (listener: () => void): (() => void) => {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+};
 
 export function applyBackendState(data: Partial<StoreState>) {
   if (data.patients) state.patients = clone(data.patients);
@@ -76,13 +79,11 @@ export function updateAppointmentStatus(id: string, status: AppointmentStatus): 
   appointment.status = status;
   emit();
   const backendId = Number(id);
-  const backendStatusMap: Record<string, string> = {
+  const backendStatusMap: Record<AppointmentStatus, string> = {
     scheduled: 'Pendiente', confirmed: 'Confirmada', arrived: 'Llegó', in_progress: 'En curso', completed: 'Completada', cancelled: 'Cancelada', no_show: 'No asistió'
   };
   if (Number.isInteger(backendId) && backendId > 0) {
-    void updateEstadoCita(backendId, backendStatusMap[status] || status).catch(() => {
-      emit();
-    });
+    void updateEstadoCita(backendId, backendStatusMap[status]).catch(() => emit());
   }
   return clone(appointment);
 }
