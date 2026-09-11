@@ -1,6 +1,7 @@
 """Seguridad de autenticación y autorización para OdontoSoft.
 
-PostgreSQL es la fuente de verdad. Este módulo sólo gestiona identidad y sesión.
+PostgreSQL es la fuente de verdad. Este módulo gestiona identidad, sesión y
+controles de acceso a recursos usando exclusivamente las relaciones existentes.
 """
 
 import os
@@ -114,20 +115,51 @@ def user_patient_ids(db, user_id: int) -> set[int]:
     return {int(row[0]) for row in rows}
 
 
+def dentist_id_for_user(db, user: dict) -> int | None:
+    """Resuelve el odontólogo por el correo del usuario autenticado.
+
+    El esquema legado no tiene FK usuario->odontologo, por lo que el correo
+    es la única relación explícita disponible actualmente.
+    """
+    if normalize_role(str(user.get("role", ""))) != "dentist":
+        return None
+    correo = str(user.get("email", "")).strip().lower()
+    if not correo:
+        return None
+    row = db.query(models.Odontologo.id_odontologo).filter(
+        models.Odontologo.correo.ilike(correo)
+    ).first()
+    return int(row[0]) if row else None
+
+
+def dentist_patient_ids(db, user: dict) -> set[int]:
+    dentist_id = dentist_id_for_user(db, user)
+    if dentist_id is None:
+        return set()
+    rows = db.query(models.Cita.id_paciente).filter(models.Cita.id_odontologo == dentist_id).distinct().all()
+    return {int(row[0]) for row in rows}
+
+
 def require_patient_resource(path_param: str):
     """Autoriza una ruta que contiene un id de paciente."""
-    def dependency(request: Request, db=Depends(lambda: None)):
+    def dependency(request: Request):
         user = get_current_user(request)
-        if user["role"] != "patient":
-            return user
+        role = normalize_role(str(user.get("role", "")))
         raw_id = request.path_params.get(path_param)
         try:
             patient_id = int(raw_id)
         except (TypeError, ValueError):
             raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+
         session = SessionLocal()
         try:
-            if patient_id not in user_patient_ids(session, int(user["sub"])):
+            if role == "patient":
+                if patient_id not in user_patient_ids(session, int(user["sub"])):
+                    raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+            elif role == "dentist":
+                if patient_id not in dentist_patient_ids(session, user):
+                    raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+            elif role not in {"superadmin", "clinic_admin"}:
                 raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
         finally:
             session.close()
@@ -135,11 +167,17 @@ def require_patient_resource(path_param: str):
     return dependency
 
 
+def require_clinical_patient_resource(path_param: str):
+    """Permite acceso clínico a admin/odontólogo y lectura propia al paciente."""
+    return require_patient_resource(path_param)
+
+
 def require_appointment_resource(path_param: str = "id"):
-    """Autoriza una cita concreta al paciente vinculado; personal puede continuar por rol."""
+    """Autoriza una cita concreta según paciente o odontólogo asignado."""
     def dependency(request: Request):
         user = get_current_user(request)
-        if user["role"] != "patient":
+        role = normalize_role(str(user.get("role", "")))
+        if role in {"superadmin", "clinic_admin"}:
             return user
         raw_id = request.path_params.get(path_param)
         try:
@@ -149,16 +187,20 @@ def require_appointment_resource(path_param: str = "id"):
         session = SessionLocal()
         try:
             cita = session.query(models.Cita).filter(models.Cita.id_cita == appointment_id).first()
-            if not cita or cita.id_paciente not in user_patient_ids(session, int(user["sub"])):
+            if not cita:
+                raise HTTPException(status_code=404, detail="Cita no encontrada")
+            if role == "patient":
+                allowed = cita.id_paciente in user_patient_ids(session, int(user["sub"]))
+            elif role == "dentist":
+                allowed = dentist_id_for_user(session, user) == int(cita.id_odontologo)
+            else:
+                allowed = False
+            if not allowed:
                 raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
         finally:
             session.close()
         return user
     return dependency
-
-
-def require_resource_patient_from_path(patient_path: str):
-    return require_patient_resource(patient_path)
 
 
 def module_allowed(path: str, role: str) -> bool:
