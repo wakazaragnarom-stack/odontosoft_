@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import models, schemas
 from database import get_db
-from security import dentist_patient_ids, require_patient_resource, require_staff
+from security import dentist_patient_ids, require_patient_resource, require_roles, require_staff
 
 router = APIRouter(prefix="/historias-clinicas", tags=["Historias Clínicas"])
 
