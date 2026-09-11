@@ -1,20 +1,61 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# OdontoSoft — Unificación funcional
 
-# Run and deploy your AI Studio app
+OdontoSoft integra un frontend React/TypeScript con un backend FastAPI existente y mantiene **PostgreSQL como única fuente de verdad y persistencia**.
 
-This contains everything you need to run your app locally.
+## Estructura
 
-View your app in AI Studio: https://ai.studio/apps/abedea2c-4bfe-479f-8137-776cc0b6c15c
+- `src/`: aplicación React, cliente HTTP y estado de presentación.
+- `docs/`: documentación técnica.
+- `main.py` y módulos `.py`: backend FastAPI/SQLAlchemy.
+- `.github/workflows/`: CI de frontend y backend.
 
-## Run Locally
+## Arquitectura
 
-**Prerequisites:**  Node.js
+Frontend: React + TypeScript + Vite.
 
+Backend: FastAPI + SQLAlchemy.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Persistencia: PostgreSQL existente.
+
+Autenticación: JWT + bcrypt, incluyendo migración transparente de hashes SHA-256 heredados.
+
+Seguridad: CORS configurable, Trusted Host opcional, autorización por módulo y controles de acceso a recursos clínicos y administrativos.
+
+## Flujo clínico
+
+`Paciente → Cita → Atención → Historia clínica → Odontograma → Tratamiento → Pago → Factura`
+
+Las operaciones definitivas pasan por FastAPI y persisten en PostgreSQL. El estado React es una representación/cache y no reemplaza la base de datos.
+
+## Desarrollo
+
+### Frontend
+
+```bash
+npm install
+npm run dev
+```
+
+### Backend
+
+Configura las variables de entorno de PostgreSQL y JWT y ejecuta:
+
+```bash
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+La aplicación no crea tablas automáticamente al arrancar.
+
+## Validación
+
+```bash
+npm install
+npm run lint
+npm run build
+pip install -r requirements.txt
+python -m compileall -q *.py
+```
+
+## Seguridad de secretos
+
+`.env` no forma parte del repositorio. Usa `.env.example` como plantilla y configura los secretos mediante variables de entorno o el proveedor de despliegue.
