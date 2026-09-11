@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OdontoSoft - Inicio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"/>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/index.css">
+</head>
+<body>
+ <!-- HEADER -->
+    <header class="header">
+        <div class="logo">
+            <span class="material-symbols-outlined logo-icon">dentistry</span>
+            <h1>Odonto<span>Soft</span></h1>
+        </div>
+        <nav class="menu">
+            <a href="login.html">Iniciar Sesión</a>
+            <a href="registro.html">Registrarse</a>
+        </nav>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-content">
+            <h2>Sistema de Gestión <span>Odontológica</span></h2>
+            <p>Administra pacientes, citas, tratamientos, pagos e historiales clínicos desde una sola plataforma.</p>
+            <a href="login.html" class="btn">Comenzar</a>
+        </div>
+    </section>
+
+    <!-- SERVICIOS -->
+    <section class="titulo-servicios">
+        <h2>Nuestros Servicios</h2>
+    </section>
+
+    <section class="servicios">
+        <div class="card">
+            <img src="https://www.lavanguardia.com/files/og_thumbnail/uploads/2021/06/23/60d2f1f679740.jpeg" alt="Pacientes" class="card-img">
+            <h3>Pacientes</h3>
+            <p>Administra la información, historial clínico y tratamientos de los pacientes de manera sencilla y eficiente.</p>
+        </div>
+        <div class="card">
+            <img src="https://thumbs.dreamstime.com/b/calendario-de-citas-con-dentista-en-un-fondo-azul-espacio-copia-recordatorios-para-visitar-la-cl%C3%ADnica-dental-fecha-revisi%C3%B3n-317410762.jpg" alt="Citas" class="card-img">
+            <h3>Citas</h3>
+            <p>Permite programar, reprogramar y cancelar citas, facilitando la organización de los horarios y el seguimiento de cada consulta.</p>
+        </div>
+        <div class="card">
+            <img src="https://live-cms.s3.eu-south-1.amazonaws.com/Header_Image_preworks_fd4d4ebe16.jpg" alt="Tratamientos" class="card-img">
+            <h3>Tratamientos</h3>
+            <p>Registra y administra diagnósticos, procedimientos y la evolución de cada paciente, manteniendo un historial clínico organizado.</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-contenedor">
+            <div class="footer-seccion">
+                <div class="logo-footer">
+                    <span class="material-symbols-outlined logo-icon-footer">dentistry</span>
+                    <h1>Odonto<span>Soft</span></h1>
+                </div>
+                <p style="margin-top: 10px; color: #cbd5e1; font-size: 0.9rem; line-height: 1.8;">
+                    Sistema de gestión odontológica diseñado para facilitar la administración de pacientes, citas y tratamientos.
+                </p>
+            </div>
+
+            <div class="footer-seccion">
+                <h3>Contacto</h3>
+                <p>📍 Calle 45 #15-20, Bogotá, Colombia</p>
+                <p>📞 +57 320 123 4567</p>
+                <p>✉️ contacto@odontosoft.com</p>
+            </div>
+
+            <div class="footer-seccion">
+                <h3>Términos y Condiciones</h3>
+                <ul class="footer-links">
+                    <li><a href="politica-privacidad.html">Política de privacidad</a></li>
+                    <li><a href="uso-sistema.html">Uso del sistema</a></li>
+                    <li><a href="proteccion-datos.html">Protección de datos</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <p class="copyright">
+            <span class="material-symbols-outlined copyright-icon">dentistry</span>
+            <span class="copyright-logo">Odonto<span class="copyright-logo-soft">Soft</span></span>
+            © 2026 | Todos los derechos reservados.
+        </p>
+    </footer>
+
+    <script>
+        // FORZAR SCROLL AL INICIO - MÚLTIPLES INTENTOS
+        window.scrollTo(0, 0);
+        
+        // Intentar de nuevo después de que la página cargue
+        window.addEventListener('load', function() {
+            window.scrollTo(0, 0);
+        });
+        
+        // Intentar de nuevo después de un pequeño retraso
+        setTimeout(function() {
+            window.scrollTo(0, 0);
+        }, 100);
+        
+        // Intentar de nuevo después de que todo el contenido se renderice
+        setTimeout(function() {
+            window.scrollTo(0, 0);
+        }, 500);
+    </script>
+</body>
+</html>

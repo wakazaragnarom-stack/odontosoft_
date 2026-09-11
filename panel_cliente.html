@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OdontoSoft - Paciente</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/panel_cliente.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"/>
+    <style>
+        /* ============================================
+           MODAL EDITAR PERFIL
+           ============================================ */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.open { display: flex; }
+        
+        .modal {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 32px 35px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            animation: modalFadeIn 0.3s ease;
+        }
+        .modal::-webkit-scrollbar { width: 6px; }
+        .modal::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        .modal::-webkit-scrollbar-thumb { background: var(--primary-color); border-radius: 10px; }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(15px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .modal h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 22px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+        }
+        .modal h3 .material-symbols-outlined {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-main);
+        }
+        .form-group label .required {
+            color: #ef4444;
+            margin-left: 2px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            background: #fafbfc;
+            transition: all 0.25s ease;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.12);
+        }
+        .form-group input::placeholder {
+            color: #94a3b8;
+            font-weight: 300;
+        }
+        .form-group input.input-error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+        .form-group input.input-error:focus {
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        }
+        .form-group input:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 3px;
+            display: none;
+        }
+        .error-message.show { display: block; }
+        
+        .modal-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 22px;
+            padding-top: 16px;
+            border-top: 1px solid #f1f5f9;
+            position: sticky;
+            bottom: 0;
+            background: #fff;
+            z-index: 10;
+            padding-bottom: 4px;
+        }
+        .modal-footer button {
+            padding: 11px 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+        }
+        .btn-cancelar {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+        .btn-cancelar:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        .btn-guardar {
+            background: var(--primary-color);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+        }
+        .btn-guardar:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.3);
+        }
+        .btn-guardar:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .btn-guardar .spinner {
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* ============================================
+           BOTÓN MI PERFIL EN HEADER (azul)
+           ============================================ */
+        .btn-perfil-header {
+            background: var(--primary-color);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+        }
+        .btn-perfil-header:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.3);
+        }
+        
+        /* ============================================
+           PESTAÑAS
+           ============================================ */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 25px;
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .tab-btn {
+            padding: 14px 28px;
+            background: transparent;
+            border: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 3px solid transparent;
+            flex: 1;
+            justify-content: center;
+        }
+        .tab-btn .material-symbols-outlined {
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+        }
+        .tab-btn:hover {
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+        .tab-btn:hover .material-symbols-outlined {
+            color: var(--primary-color);
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+        .tab-btn.active .material-symbols-outlined {
+            color: var(--primary-color);
+        }
+        .tab-content {
+            display: none;
+            padding-top: 10px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* ============================================
+           TABLA
+           ============================================ */
+        .table-container {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 30px;
+        }
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .table-container thead th {
+            background: #f8fafc;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            font-weight: 700;
+            padding: 14px 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .table-container tbody td {
+            padding: 14px 20px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+        }
+        .table-container tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table-container tbody tr:hover td {
+            background: #f8fafc;
+        }
+        
+        .badge {
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: inline-block;
+        }
+        .badge.blue { background: #e0f2fe; color: #0369a1; }
+        .badge.green { background: #dcfce7; color: #15803d; }
+        .badge.yellow { background: #fef9c3; color: #a16207; }
+        .badge.red { background: #fee2e2; color: #b91c1c; }
+        
+        /* ============================================
+           TOAST
+           ============================================ */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 14px 24px;
+            border-radius: 10px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 999;
+            opacity: 0;
+            transform: translateX(120%);
+            transition: all 0.4s ease;
+            pointer-events: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            max-width: 380px;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        #toast.success { background: #22c55e; }
+        #toast.error { background: #ef4444; }
+        #toast.warning { background: #eab308; color: #1e293b; }
+        
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .content-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .content-header .btn-perfil-header {
+                width: 100%;
+                justify-content: center;
+            }
+            .tabs {
+                flex-direction: column;
+                border-radius: 12px;
+            }
+            .tab-btn {
+                border-bottom: 1px solid #e2e8f0;
+                border-left: 3px solid transparent;
+                padding: 12px 20px;
+                justify-content: center;
+            }
+            .tab-btn.active {
+                border-bottom: 1px solid #e2e8f0;
+                border-left: 3px solid var(--primary-color);
+            }
+            .modal {
+                padding: 24px 18px;
+            }
+        }
+        @media (max-width: 480px) {
+            .modal {
+                padding: 20px 16px;
+            }
+            .table-container thead th,
+            .table-container tbody td {
+                padding: 10px 14px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- MODAL EDITAR PERFIL -->
+<div id="modalEditarPerfil" class="modal-overlay">
+    <div class="modal">
+        <h3>
+            <span class="material-symbols-outlined">edit</span>
+            Editar Perfil
+        </h3>
+        <input type="hidden" id="editPacienteId">
+
+        <div class="form-group">
+            <label>Nombre <span class="required">*</span></label>
+            <input type="text" id="inNombre" placeholder="Nombre">
+        </div>
+
+        <div class="form-group">
+            <label>Apellido <span class="required">*</span></label>
+            <input type="text" id="inApellido" placeholder="Apellido">
+        </div>
+
+        <div class="form-group">
+            <label>Teléfono <span class="required">*</span></label>
+            <input type="tel" id="inTelefono" placeholder="3001234567">
+            <small id="telefonoError" class="error-message">Ingresa un número de teléfono válido</small>
+        </div>
+
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="inCorreo" placeholder="correo@ejemplo.com" disabled>
+            <small style="color:var(--text-muted); font-size:0.7rem;">El correo no se puede modificar</small>
+        </div>
+
+        <div class="modal-footer">
+            <button class="btn-cancelar" onclick="cerrarModalEditar()">Cancelar</button>
+            <button class="btn-guardar" id="btnGuardarPerfil" onclick="guardarPerfil()">
+                <span class="material-symbols-outlined">save</span> Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard-container">
+    <aside class="sidebar" style="background-color:#1e293b">
+        <div class="sidebar-brand">
+            <span class="material-symbols-outlined">account_circle</span>
+            <span>Paciente</span>
+        </div>
+        <nav class="sidebar-menu">
+            <a href="#" onclick="cambiarTab('servicios'); return false;" class="active" id="menuServicios">
+                <span class="material-symbols-outlined">medical_information</span> Mis Servicios
+            </a>
+            <a href="#" onclick="cambiarTab('citas'); return false;" id="menuCitas">
+                <span class="material-symbols-outlined">calendar_month</span> Mis Citas
+            </a>
+            <a href="contacto.html">
+                <span class="material-symbols-outlined">support_agent</span> Soporte
+            </a>
+            <a href="login.html" onclick="localStorage.removeItem('usuario_actual')">
+                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="content-header">
+            <div>
+                <h2 id="tituloSeccion">Mis Servicios</h2>
+                <p id="subtituloSeccion" style="color:var(--text-muted)">Consulta tus servicios y citas</p>
+            </div>
+            <!-- ============================================ -->
+            <!-- BOTÓN MI PERFIL EN AZUL                       -->
+            <!-- ============================================ -->
+            <button class="btn-perfil-header" onclick="abrirModalEditar()">
+                <span class="material-symbols-outlined">person</span> Mi Perfil
+            </button>
+        </header>
+
+        <!-- PESTAÑAS -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="servicios" onclick="cambiarTab('servicios')">
+                <span class="material-symbols-outlined">medical_information</span> Mis Servicios
+            </button>
+            <button class="tab-btn" data-tab="citas" onclick="cambiarTab('citas')">
+                <span class="material-symbols-outlined">calendar_month</span> Mis Citas
+            </button>
+        </div>
+
+        <!-- TAB 1: MIS SERVICIOS -->
+        <div id="tabServicios" class="tab-content active">
+            <h3 style="margin-bottom:16px;font-size:1rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
+                📋 Servicios Adquiridos
+            </h3>
+            <section class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Servicio</th>
+                            <th>Odontólogo</th>
+                            <th>Próxima Cita</th>
+                            <th>Estado de Cuenta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaServicios">
+                        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted)">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+        <!-- TAB 2: MIS CITAS -->
+        <div id="tabCitas" class="tab-content">
+            <h3 style="margin-bottom:16px;font-size:1rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px">
+                📅 Mis Citas
+            </h3>
+            <section class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tratamiento</th>
+                            <th>Odontólogo</th>
+                            <th>Fecha y Hora</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCitas">
+                        <tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted)">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script>
+    // ── Variables ──────────────────────────────────────────────────────────────
+    let pacienteActual = null;
+    let usuarioActual = null;
+
+    // ── Cambiar pestañas ──────────────────────────────────────────────────────
+    function cambiarTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
+        document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+        
+        const titulos = {
+            'servicios': ['Mis Servicios', 'Consulta tus servicios adquiridos'],
+            'citas': ['Mis Citas', 'Consulta tus citas programadas']
+        };
+        document.getElementById('tituloSeccion').textContent = titulos[tab][0];
+        document.getElementById('subtituloSeccion').textContent = titulos[tab][1];
+        
+        document.querySelectorAll('.sidebar-menu a').forEach(el => el.classList.remove('active'));
+        if (tab === 'servicios') {
+            document.getElementById('menuServicios').classList.add('active');
+        } else {
+            document.getElementById('menuCitas').classList.add('active');
+        }
+    }
+
+    // ── Toast ──────────────────────────────────────────────────────────────────
+    function toast(msg, tipo = "success") {
+        const t = document.getElementById("toast");
+        if (!t) return;
+        t.textContent = msg;
+        t.className = `toast show ${tipo}`;
+        setTimeout(() => t.classList.remove("show"), 3500);
+    }
+
+    // ── Validar teléfono ──────────────────────────────────────────────────────
+    function validarTelefono(telefono) {
+        const regex = /^[0-9+\-\s]{7,15}$/;
+        return regex.test(telefono);
+    }
+
+    // ── API ──────────────────────────────────────────────────────────────────
+    const API = "http://127.0.0.1:8000";
+
+    async function api(method, path, body = null) {
+        const res = await fetch(`${API}${path}`, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: body ? JSON.stringify(body) : null,
+        });
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.detail || `Error ${res.status}`);
+        }
+        return res.status === 204 ? null : res.json();
+    }
+
+    // ── Cargar perfil del paciente ────────────────────────────────────────────
+    async function cargarPerfil() {
+        try {
+            const usuarioStr = localStorage.getItem('usuario_actual');
+            if (!usuarioStr) {
+                window.location.href = "login.html";
+                return;
+            }
+            usuarioActual = JSON.parse(usuarioStr);
+
+            const pacientes = await api("GET", "/pacientes");
+            const paciente = pacientes.find(p => p.correo === usuarioActual.correo);
+            
+            if (!paciente) {
+                toast("❌ No se encontró el perfil del paciente", "error");
+                return;
+            }
+
+            pacienteActual = paciente;
+
+            await cargarServicios(paciente.id_paciente);
+            await cargarCitas(paciente.id_paciente);
+
+        } catch (error) {
+            console.error("Error al cargar perfil:", error);
+            toast("❌ Error al cargar el perfil", "error");
+        }
+    }
+
+    // ── Cargar servicios ──────────────────────────────────────────────────────
+    async function cargarServicios(pacienteId) {
+        try {
+            const servicios = await api("GET", `/servicios/paciente/${pacienteId}`).catch(() => []);
+            const tbS = document.getElementById("tablaServicios");
+            const colCuenta = { "Pagado": "green", "Saldo Pendiente": "yellow" };
+            
+            if (!servicios.length) {
+                tbS.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">No hay servicios registrados</td></tr>`;
+                return;
+            }
+            
+            tbS.innerHTML = servicios.map(s => `
+                <tr>
+                    <td><strong>${s.tratamiento_nombre || 'Tratamiento #' + s.id_tratamiento}</strong></td>
+                    <td>${s.odontologo_nombre || s.id_odontologo || '—'}</td>
+                    <td>${s.proxima_cita || 'Por definir'}</td>
+                    <td><span class="badge ${colCuenta[s.estado_cuenta] || 'yellow'}">${s.estado_cuenta || 'Pendiente'}</span></td>
+                </tr>
+            `).join("");
+        } catch {
+            document.getElementById("tablaServicios").innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Error al cargar servicios</td></tr>`;
+        }
+    }
+
+    // ── Cargar citas ──────────────────────────────────────────────────────────
+    async function cargarCitas(pacienteId) {
+        try {
+            const citas = await api("GET", `/citas/paciente/${pacienteId}`).catch(() => []);
+            const tbC = document.getElementById("tablaCitas");
+            const colEstado = { "En Espera": "yellow", "En Consulta": "blue", "Finalizado": "green" };
+            
+            if (!citas.length) {
+                tbC.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">No hay citas registradas</td></tr>`;
+                return;
+            }
+            
+            tbC.innerHTML = citas.map(c => `
+                <tr>
+                    <td>${c.tratamiento_nombre || c.id_tratamiento || '—'}</td>
+                    <td>${c.odontologo_nombre || c.id_odontologo || '—'}</td>
+                    <td>${c.fecha || '—'} ${c.hora || ''}</td>
+                    <td><span class="badge ${colEstado[c.estado] || 'blue'}">${c.estado || 'Pendiente'}</span></td>
+                </tr>
+            `).join("");
+        } catch {
+            document.getElementById("tablaCitas").innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Error al cargar citas</td></tr>`;
+        }
+    }
+
+    // ── Modal Editar Perfil ────────────────────────────────────────────────────
+    function abrirModalEditar() {
+        if (!pacienteActual) {
+            toast("❌ No hay perfil para editar", "error");
+            return;
+        }
+        
+        document.getElementById("editPacienteId").value = pacienteActual.id_paciente;
+        document.getElementById("inNombre").value = pacienteActual.nombre || "";
+        document.getElementById("inApellido").value = pacienteActual.apellido || "";
+        document.getElementById("inTelefono").value = pacienteActual.telefono || "";
+        document.getElementById("inCorreo").value = pacienteActual.correo || "";
+        
+        document.getElementById("telefonoError").classList.remove('show');
+        document.getElementById("inTelefono").classList.remove('input-error');
+        
+        document.getElementById("btnGuardarPerfil").disabled = false;
+        document.getElementById("btnGuardarPerfil").innerHTML = '<span class="material-symbols-outlined">save</span> Guardar';
+        document.getElementById("modalEditarPerfil").classList.add("open");
+    }
+
+    function cerrarModalEditar() {
+        document.getElementById("modalEditarPerfil").classList.remove("open");
+    }
+
+    // ── Validación de teléfono en tiempo real ────────────────────────────────
+    document.getElementById('inTelefono').addEventListener('input', function() {
+        const telefono = this.value.trim();
+        const error = document.getElementById('telefonoError');
+        if (telefono.length > 0 && !validarTelefono(telefono)) {
+            this.classList.add('input-error');
+            error.classList.add('show');
+        } else {
+            this.classList.remove('input-error');
+            error.classList.remove('show');
+        }
+    });
+
+    // ── Guardar Perfil ──────────────────────────────────────────────────────────
+    async function guardarPerfil() {
+        const id = document.getElementById("editPacienteId").value;
+        const nombre = document.getElementById("inNombre").value.trim();
+        const apellido = document.getElementById("inApellido").value.trim();
+        const telefono = document.getElementById("inTelefono").value.trim();
+        const btn = document.getElementById("btnGuardarPerfil");
+
+        if (!nombre) {
+            toast("👤 Por favor, ingresa tu nombre", "warning");
+            document.getElementById("inNombre").focus();
+            return;
+        }
+        if (!apellido) {
+            toast("👤 Por favor, ingresa tu apellido", "warning");
+            document.getElementById("inApellido").focus();
+            return;
+        }
+        if (!telefono) {
+            toast("📱 Por favor, ingresa tu teléfono", "warning");
+            document.getElementById("inTelefono").focus();
+            return;
+        }
+        if (!validarTelefono(telefono)) {
+            toast("📱 Ingresa un número de teléfono válido", "error");
+            document.getElementById("inTelefono").focus();
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined spinner">progress_activity</span> Guardando...`;
+
+        try {
+            const data = { 
+                nombre, 
+                apellido, 
+                telefono,
+                documento: pacienteActual.documento,
+                correo: pacienteActual.correo
+            };
+            await api("PUT", `/pacientes/${id}`, data);
+            
+            pacienteActual.nombre = nombre;
+            pacienteActual.apellido = apellido;
+            pacienteActual.telefono = telefono;
+            
+            toast("✅ Perfil actualizado correctamente", "success");
+            cerrarModalEditar();
+            
+        } catch (error) {
+            console.error("Error al guardar:", error);
+            toast(`❌ ${error.message || "Error al guardar"}`, "error");
+            btn.disabled = false;
+            btn.innerHTML = `<span class="material-symbols-outlined">save</span> Guardar`;
+        }
+    }
+
+    // ── Verificar sesión ─────────────────────────────────────────────────────────
+    const usuarioActualStr = localStorage.getItem('usuario_actual');
+    if (!usuarioActualStr) {
+        window.location.href = "login.html";
+    }
+
+    // ── Inicio ─────────────────────────────────────────────────────────────────
+    cargarPerfil();
+</script>
+</body>
+</html>

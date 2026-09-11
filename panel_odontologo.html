@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OdontoSoft - Panel Odontólogo</title>
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <link href="../css/panel.css" rel="stylesheet">
+    <link href="../css/panel_odontologo.css" rel="stylesheet">
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="dashboard-container">
+    <aside class="sidebar">
+        <div class="sidebar-brand"><span class="material-symbols-outlined">dentistry</span><span>OdontoSoft</span></div>
+        <nav class="sidebar-menu">
+            <a class="active" href="panel_odontologo.html"><span class="material-symbols-outlined">group</span> Pacientes</a>
+            <a href="tratamientos.html"><span class="material-symbols-outlined">medical_services</span> Tratamientos</a>
+            <a href="citas.html"><span class="material-symbols-outlined">calendar_month</span> Citas</a>
+            <a href="#" onclick="cerrarSesionOdonto(event)"><span class="material-symbols-outlined">logout</span> Salir</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="content-header">
+            <div>
+                <h2>Panel del Odontólogo</h2>
+                <p style="color:var(--text-muted)">Pacientes registrados y atención clínica</p>
+            </div>
+            <div class="odontologo-saludo" id="odontologoSaludo">Odontólogo</div>
+        </header>
+
+        <section class="metrics-grid">
+            <div class="metric-card"><div class="metric-icon"><span class="material-symbols-outlined">groups</span></div><div class="metric-data"><h3 id="cntPacientes">—</h3><p>Pacientes registrados</p></div></div>
+            <div class="metric-card"><div class="metric-icon"><span class="material-symbols-outlined">event_available</span></div><div class="metric-data"><h3 id="cntCitas">—</h3><p>Citas registradas</p></div></div>
+        </section>
+
+        <section class="odontologo-toolbar">
+            <div class="busqueda-paciente"><span class="material-symbols-outlined">search</span><input id="buscarPaciente" type="search" placeholder="Buscar por nombre, documento o correo..."></div>
+            <button class="btn-primary" onclick="cargarPacientes()"><span class="material-symbols-outlined">refresh</span> Actualizar</button>
+        </section>
+
+        <section class="pacientes-grid" id="pacientesGrid">
+            <div class="pacientes-loading">Cargando pacientes...</div>
+        </section>
+    </main>
+</div>
+<script src="../js/panel_odontologo.js"></script><script>function cerrarSesionOdonto(e){e.preventDefault();localStorage.removeItem("usuario_actual");localStorage.removeItem("paciente_clinico_id");localStorage.removeItem("paciente_odontograma_id");window.location.assign("login.html")}</script>
+</body>
+</html>
