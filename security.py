@@ -115,11 +115,7 @@ def user_patient_ids(db, user_id: int) -> set[int]:
 
 
 def require_patient_resource(path_param: str):
-    """Autoriza una ruta que contiene un id de paciente.
-
-    Personal clínico puede acceder según la política del módulo. Un paciente
-    sólo puede acceder a recursos vinculados a su propio usuario.
-    """
+    """Autoriza una ruta que contiene un id de paciente."""
     def dependency(request: Request, db=Depends(lambda: None)):
         user = get_current_user(request)
         if user["role"] != "patient":
@@ -129,7 +125,6 @@ def require_patient_resource(path_param: str):
             patient_id = int(raw_id)
         except (TypeError, ValueError):
             raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
-        # Abrimos una sesión sólo para comprobar el vínculo usuario-paciente.
         session = SessionLocal()
         try:
             if patient_id not in user_patient_ids(session, int(user["sub"])):
@@ -140,13 +135,33 @@ def require_patient_resource(path_param: str):
     return dependency
 
 
+def require_appointment_resource(path_param: str = "id"):
+    """Autoriza una cita concreta al paciente vinculado; personal puede continuar por rol."""
+    def dependency(request: Request):
+        user = get_current_user(request)
+        if user["role"] != "patient":
+            return user
+        raw_id = request.path_params.get(path_param)
+        try:
+            appointment_id = int(raw_id)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+        session = SessionLocal()
+        try:
+            cita = session.query(models.Cita).filter(models.Cita.id_cita == appointment_id).first()
+            if not cita or cita.id_paciente not in user_patient_ids(session, int(user["sub"])):
+                raise HTTPException(status_code=403, detail="No tienes permisos para acceder a este recurso")
+        finally:
+            session.close()
+        return user
+    return dependency
+
+
 def require_resource_patient_from_path(patient_path: str):
-    """Alias explícito para dependencias de rutas clínicas con paciente_id."""
     return require_patient_resource(patient_path)
 
 
 def module_allowed(path: str, role: str) -> bool:
-    """Comprueba la política base del módulo; no sustituye la autorización por recurso."""
     normalized = normalize_role(role)
     for prefix, roles in MODULE_ROLES.items():
         if path == prefix or path.startswith(prefix + "/"):
