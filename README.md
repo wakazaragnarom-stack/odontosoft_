@@ -59,3 +59,29 @@ python -m compileall -q *.py
 ## Seguridad de secretos
 
 `.env` no forma parte del repositorio. Usa `.env.example` como plantilla y configura los secretos mediante variables de entorno o el proveedor de despliegue.
+
+## Acceso web
+
+La aplicación inicia con una pantalla de autenticación JWT. Los pacientes pueden registrarse desde la propia interfaz; los administradores pueden crear usuarios desde el panel y también existe un bootstrap local para el primer administrador:
+
+```bash
+python scripts/create_admin.py
+```
+
+Después de autenticar, el menú se adapta al rol y expone los módulos que el backend autoriza. Los perfiles de paciente y odontólogo reciben su identificador asociado desde `/auth/me` para poder consultar sus recursos sin saltarse las reglas de acceso.
+
+Frontend:
+```bash
+npm install
+npm run dev
+```
+
+Backend:
+```bash
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Swagger:
+```
+http://localhost:8000/docs
+```
