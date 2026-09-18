@@ -22,6 +22,7 @@ async function request(method, path, body = null) {
 export const login = async (data) => { const result = await request("POST", "/auth/login", data); if (result?.access_token) setAccessToken(result.access_token); return result; };
 export const getCurrentUser = () => request("GET", "/auth/me");
 export const solicitarReset = (correo) => request("POST", "/auth/solicitar-reset", { correo });
+export const resetPassword = (data) => request("POST", "/auth/reset-password", data);
 export const registroUsuario = (data) => request("POST", "/auth/registro", data);
 export const logout = () => clearAccessToken();
 export const getUsuarios = () => request("GET", "/usuarios");
