@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Package, Plus, Stethoscope, WalletCards, Building2, ShieldCheck, BellRing, UserCog, Trash2 } from 'lucide-react';
+import { Activity, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Package, Plus, Stethoscope, WalletCards, Building2, ShieldCheck, BellRing, UserCog, Trash2, Save } from 'lucide-react';
 import {
   createConsultorio, createOdontologo, createPaciente, createProveedor, createRecordatorio,
   createRol, createServicio, createTratamiento, createUsuario, deleteConsultorio,
