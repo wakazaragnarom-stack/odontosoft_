@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Activity, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Package, Plus, Stethoscope, WalletCards, Building2, ShieldCheck, BellRing, UserCog, Trash2, Save } from 'lucide-react';
 import {
-  createCita, createConsultorio, createOdontologo, createPaciente, createProveedor, createRecordatorio,
+  createCita, createConsultorio, createFactura, createOdontologo, createPaciente, createProveedor, createRecordatorio,
   createRol, createServicio, createTratamiento, createUsuario, createPago,
-  deleteOdontologo, deleteProveedor, deleteRecordatorio, deleteRol, deleteUsuario,
+  deleteConsultorio, deleteOdontologo, deleteProveedor, deleteRecordatorio, deleteRol, deleteUsuario,
   getConsultorios, getCitas, getCitasPaciente, getFacturas, getHistoriaDetallada,
   getOdontograma, getOdontologos, getPacientes, getPagos, getProveedores, getRecordatorios,
   getRoles, getServicios, getTratamientos, getUsuarios, updateEstadoCita, updateHistoriaDetallada,
