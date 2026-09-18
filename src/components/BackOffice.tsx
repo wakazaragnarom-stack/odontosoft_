@@ -80,7 +80,7 @@ function Appointments({user}:any){
   const [error,setError]=useState('');
   const load=async()=>{
     try{
-      setRows(user.role==='patient'?await getCitasPaciente(user.id_paciente):await getCitas());
+      setRows(user.role==='patient' && user.id_paciente ? await getCitasPaciente(user.id_paciente) : await getCitas());
       if(user.role!=='patient'){
         const v=await Promise.all([getPacientes(),getOdontologos(),getConsultorios()]);
         setPatients(v[0]);setDentists(v[1]);setClinics(v[2]);
