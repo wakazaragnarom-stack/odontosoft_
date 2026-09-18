@@ -1,5 +1,8 @@
 export interface AuthLoginResponse {
   id_usuario: number;
+  id_paciente?: number;
+  id_odontologo?: number;
+  nombre?: string;
   correo: string;
   rol: string;
   estado: string;
@@ -14,7 +17,8 @@ export function setAccessToken(token: string): void;
 export function clearAccessToken(): void;
 export function login(data: { correo: string; contrasena: string }): Promise<AuthLoginResponse>;
 export function getCurrentUser(): Promise<Record<string, unknown>>;
-export function solicitarReset(correo: string): Promise<Record<string, unknown>>;
+export function solicitarReset(correo: string): Promise<{ mensaje?: string } & Record<string, unknown>>;
+export function resetPassword(data: { token: string; nueva_contrasena: string }): Promise<{ mensaje?: string } & Record<string, unknown>>;
 export function registroUsuario(data: Record<string, unknown>): Promise<Record<string, unknown>>;
 export function logout(): void;
 
