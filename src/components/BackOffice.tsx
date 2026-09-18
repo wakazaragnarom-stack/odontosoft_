@@ -46,7 +46,7 @@ export default function BackOffice({user,onLogout}: Props){
       {section==='appointments' && <Appointments user={user}/>}
       {section==='clinical' && <Clinical user={user}/>}
       {section==='treatments' && <SimpleCrud title="Tratamientos" load={getTratamientos} create={createTratamiento} columns={['id_tratamiento','nombre','descripcion','costo','duracion_estimada']} fields={['nombre','descripcion','costo','duracion_estimada']}/>}
-      {section==='billing' && <Billing/>}
+      {section==='billing' && <Billing role={user.role} />}
       {section==='suppliers' && <SimpleCrud title="Proveedores" load={getProveedores} create={createProveedor} remove={deleteProveedor} columns={['id','empresa','contacto_asesor','telefono','suministro','estado_convenio']} fields={['empresa','contacto_asesor','telefono','suministro','estado_convenio']}/>}
       {section==='consultorios' && <SimpleCrud title="Consultorios" load={getConsultorios} create={createConsultorio} remove={deleteConsultorio} columns={['id_consultorio','nombre','ubicacion','numero_sala']} fields={['nombre','ubicacion','numero_sala']}/>}
       {section==='dentists' && <SimpleCrud title="Odontólogos" load={getOdontologos} create={createOdontologo} remove={deleteOdontologo} columns={['id_odontologo','nombre','apellido','documento','correo','especialidad','id_consultorio']} fields={['nombre','apellido','documento','telefono','correo','especialidad','id_consultorio']}/>}
@@ -127,7 +127,7 @@ function Clinical({user}:any){
   const [patients,setPatients]=useState<any[]>([]);const [patient,setPatient]=useState<any>(null);const [odonto,setOdonto]=useState<any>({dientes:{}});const [detail,setDetail]=useState<any>({datos_clinicos:{}});const [tooth,setTooth]=useState('11');const [state,setState]=useState('healthy');const select=async(id:number)=>{const p=await (await import('../api.js')).getPaciente(id);const v=await Promise.all([getOdontograma(id),getHistoriaDetallada(id)]);setPatient(p);setOdonto(v[0]||{dientes:{}});setDetail(v[1]||{datos_clinicos:{}});};useEffect(()=>{if(user.role==='patient'){if(user.id_paciente)void select(user.id_paciente);}else getPacientes().then(setPatients).catch(()=>{});},[user]);return <Page title={user.role==='patient'?'Mi historia clínica':'Historia clínica'}>{user.role!=='patient'&&<Card><select className="field" value={patient?.id_paciente||''} onChange={e=>void select(Number(e.target.value))}><option value="">Selecciona paciente</option>{patients.map(p=><option key={p.id_paciente} value={p.id_paciente}>{p.nombre} {p.apellido}</option>)}</select></Card>}{patient&&<div className="grid xl:grid-cols-2 gap-5"><Card><h3 className="font-black">{patient.nombre} {patient.apellido}</h3><div className="grid grid-cols-3 gap-2 mt-4"><input className="field" type="number" value={tooth} onChange={e=>setTooth(e.target.value)}/><select className="field" value={state} onChange={e=>setState(e.target.value)}><option value="healthy">Sano</option><option value="caries">Caries</option><option value="filled">Obturado</option><option value="crown">Corona</option><option value="missing">Ausente</option><option value="implant">Implante</option><option value="root_canal">Endodoncia</option></select><button onClick={async()=>{const dientes={...(odonto.dientes||{}),[tooth]:{status:state}};setOdonto(await updateOdontograma(patient.id_paciente,{id_paciente:patient.id_paciente,dientes}));}} className="btn">Guardar diente</button></div><div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-4">{Object.entries(odonto.dientes||{}).map((v:any)=><div key={v[0]} className="border rounded-lg p-2 text-center text-xs"><b>{v[0]}</b><div>{v[1]?.status||v[1]?.estado}</div></div>)}</div></Card><Card><h3 className="font-black">Datos clínicos</h3><div className="space-y-2 mt-3">{['motivo_consulta','antecedentes_medicos','alergias_especificas','presion_arterial','enfermedades_sistemicas','medicacion_actual','habitos','diagnostico_periodontal','observaciones_generales'].map(k=><textarea key={k} className="field min-h-16" placeholder={k.replaceAll('_',' ')} value={detail.datos_clinicos?.[k]||''} onChange={e=>setDetail({...detail,datos_clinicos:{...(detail.datos_clinicos||{}),[k]:e.target.value}})}/>)}</div><button onClick={async()=>setDetail(await updateHistoriaDetallada(patient.id_paciente,{id_paciente:patient.id_paciente,datos_clinicos:detail.datos_clinicos||{}}))} className="btn mt-3"><Save className="w-4 h-4"/>Guardar</button></Card></div>}{!patient&&<Card><div className="py-10 text-center text-slate-400">Selecciona un paciente.</div></Card>}</Page>;
 }
 
-function Billing(){
+function Billing({role}:{role:string}){
   const [invoices,setInvoices]=useState<any[]>([]);
   const [payments,setPayments]=useState<any[]>([]);
   const [appointments,setAppointments]=useState<any[]>([]);
@@ -135,10 +135,15 @@ function Billing(){
   const [invoice,setInvoice]=useState({fecha_emision:new Date().toISOString().slice(0,10),subtotal:'',impuesto:'',total:'',id_pago:''});
   const [error,setError]=useState('');
   const load=async()=>{
-    try{const v=await Promise.all([getFacturas(),getPagos(),getCitas()]);setInvoices(v[0]||[]);setPayments(v[1]||[]);setAppointments(v[2]||[]);}
-    catch(e:any){setError(e.message||'No se pudo cargar facturación.');}
+    try{
+      setInvoices((await getFacturas())||[]);
+      if(role!=='patient'){
+        const v=await Promise.all([getPagos(),getCitas()]);
+        setPayments(v[0]||[]);setAppointments(v[1]||[]);
+      }
+    }catch(e:any){setError(e.message||'No se pudo cargar facturación.');}
   };
-  useEffect(()=>{void load();},[]);
+  useEffect(()=>{void load();},[role]);
   const savePayment=async()=>{
     try{
       await createPago({...form,monto:Number(form.monto),id_cita:Number(form.id_cita)});
@@ -153,8 +158,8 @@ function Billing(){
       await load();
     }catch(e:any){setError(e.message||'No se pudo crear la factura.');}
   };
-  return <Page title="Pagos y facturas">
-    <Card><h3 className="font-black">Registrar pago</h3><div className="grid md:grid-cols-6 gap-3 mt-3">
+  return <Page title={role==='patient'?'Mis facturas':'Pagos y facturas'}>
+    {role!=='patient'&&<><Card><h3 className="font-black">Registrar pago</h3><div className="grid md:grid-cols-6 gap-3 mt-3">
       <input className="field" type="date" value={form.fecha_pago} onChange={e=>setForm({...form,fecha_pago:e.target.value})}/>
       <input className="field" type="number" min="0" placeholder="Monto" value={form.monto} onChange={e=>setForm({...form,monto:e.target.value})}/>
       <select className="field" value={form.metodo_pago} onChange={e=>setForm({...form,metodo_pago:e.target.value})}><option>Efectivo</option><option>Tarjeta de Crédito/Débito</option><option>Transferencia Bancaria</option><option>MercadoPago / PSE</option></select>
@@ -168,7 +173,7 @@ function Billing(){
       <input className="field" type="number" placeholder="Impuesto" value={invoice.impuesto} onChange={e=>setInvoice({...invoice,impuesto:e.target.value})}/>
       <input className="field" type="number" placeholder="Total" value={invoice.total} onChange={e=>setInvoice({...invoice,total:e.target.value})}/>
       <select className="field" value={invoice.id_pago} onChange={e=>setInvoice({...invoice,id_pago:e.target.value})}><option value="">Pago</option>{payments.map(p=><option key={p.id_pago} value={p.id_pago}>Pago #{p.id_pago} · {p.monto}</option>)}</select>
-    </div><button onClick={()=>void saveInvoice()} disabled={!invoice.id_pago} className="btn mt-3"><Plus className="w-4 h-4"/>Crear factura</button></Card>
+    </div><button onClick={()=>void saveInvoice()} disabled={!invoice.id_pago} className="btn mt-3"><Plus className="w-4 h-4"/>Crear factura</button></Card></>}
     <DataTable rows={invoices} columns={['id_factura','fecha_emision','subtotal','impuesto','total','id_pago']}/>
     {error&&<p className="text-sm text-rose-600">{error}</p>}
   </Page>;
