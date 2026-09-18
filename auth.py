@@ -29,10 +29,37 @@ def login(data: schemas.LoginRequest, db: Session = Depends(get_db)):
         db.commit()
 
     token, expires_at = create_access_token(user_id=usuario.id_usuario, email=usuario.correo, role=usuario.rol)
+    role = normalize_role(usuario.rol)
+    id_paciente = None
+    id_odontologo = None
+    nombre = usuario.nombre
+    if role == "patient":
+        row = (
+            db.query(models.usuario_paciente.c.id_paciente)
+            .filter(models.usuario_paciente.c.id_usuario == usuario.id_usuario)
+            .first()
+        )
+        id_paciente = int(row[0]) if row else None
+        if id_paciente:
+            paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == id_paciente).first()
+            if paciente:
+                nombre = f"{paciente.nombre} {paciente.apellido}".strip()
+    elif role == "dentist":
+        odontologo = db.query(models.Odontologo).filter(models.Odontologo.correo.ilike(usuario.correo)).first()
+        if odontologo:
+            id_odontologo = odontologo.id_odontologo
+            nombre = f"{odontologo.nombre} {odontologo.apellido}".strip()
+
+    usuario.ultimo_acceso = __import__("datetime").datetime.utcnow()
+    db.commit()
+
     return {
         "id_usuario": usuario.id_usuario,
+        "id_paciente": id_paciente,
+        "id_odontologo": id_odontologo,
         "correo": usuario.correo,
-        "rol": normalize_role(usuario.rol),
+        "nombre": nombre,
+        "rol": role,
         "estado": usuario.estado,
         "mensaje": "Login exitoso",
         "access_token": token,
@@ -48,10 +75,33 @@ def me(request: Request, db: Session = Depends(get_db)):
     usuario = db.query(models.Usuario).filter(models.Usuario.id_usuario == int(current["sub"])).first()
     if not usuario or usuario.estado != "Activo":
         raise HTTPException(status_code=401, detail="La sesión ya no es válida")
+    role = normalize_role(usuario.rol)
+    id_paciente = None
+    id_odontologo = None
+    nombre = usuario.nombre
+    if role == "patient":
+        row = (
+            db.query(models.usuario_paciente.c.id_paciente)
+            .filter(models.usuario_paciente.c.id_usuario == usuario.id_usuario)
+            .first()
+        )
+        id_paciente = int(row[0]) if row else None
+        if id_paciente:
+            paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == id_paciente).first()
+            if paciente:
+                nombre = f"{paciente.nombre} {paciente.apellido}".strip()
+    elif role == "dentist":
+        odontologo = db.query(models.Odontologo).filter(models.Odontologo.correo.ilike(usuario.correo)).first()
+        if odontologo:
+            id_odontologo = odontologo.id_odontologo
+            nombre = f"{odontologo.nombre} {odontologo.apellido}".strip()
     return {
         "id_usuario": usuario.id_usuario,
+        "id_paciente": id_paciente,
+        "id_odontologo": id_odontologo,
         "correo": usuario.correo,
-        "rol": normalize_role(usuario.rol),
+        "nombre": nombre,
+        "rol": role,
         "estado": usuario.estado,
     }
 
