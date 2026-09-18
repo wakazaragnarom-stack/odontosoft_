@@ -1,137 +1,148 @@
-# routers/auth.py - Autenticación y Registro
+"""Autenticación contra la tabla Usuario existente de PostgreSQL."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from datetime import datetime
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+import auth_schemas
 import models
 import schemas
 from database import get_db
-from utils import hash_password, verificar_password, validar_correo, generar_documento_unico
+from security import create_access_token, get_current_user, normalize_role
+from utils import generar_documento_unico, hash_password, needs_password_rehash, validar_correo, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 
-# ── LOGIN ─────────────────────────────────────────────────────────────────────
-
-@router.post("/login", response_model=schemas.LoginResponse)
+@router.post("/login", response_model=auth_schemas.SecureLoginResponse)
 def login(data: schemas.LoginRequest, db: Session = Depends(get_db)):
-    """Autenticar usuario con correo y contraseña."""
-    
-    usuario = db.query(models.Usuario).filter(
-        models.Usuario.correo == data.correo
-    ).first()
-    
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Correo no registrado"
-        )
-    
-    if not verificar_password(data.contrasena, usuario.contrasena):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Contraseña incorrecta"
-        )
-    
+    email = str(data.correo).strip().lower()
+    usuario = db.query(models.Usuario).filter(models.Usuario.correo == email).first()
+
+    if not usuario or not verify_password(data.contrasena, usuario.contrasena):
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas", headers={"WWW-Authenticate": "Bearer"})
     if usuario.estado != "Activo":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario inactivo. Contacte al administrador."
+        raise HTTPException(status_code=403, detail="La cuenta no está activa")
+
+    if needs_password_rehash(usuario.contrasena):
+        usuario.contrasena = hash_password(data.contrasena)
+        db.commit()
+
+    token, expires_at = create_access_token(user_id=usuario.id_usuario, email=usuario.correo, role=usuario.rol)
+    role = normalize_role(usuario.rol)
+    id_paciente = None
+    id_odontologo = None
+    nombre = usuario.nombre
+    if role == "patient":
+        row = (
+            db.query(models.usuario_paciente.c.id_paciente)
+            .filter(models.usuario_paciente.c.id_usuario == usuario.id_usuario)
+            .first()
         )
-    
-    return schemas.LoginResponse(
-        id_usuario=usuario.id_usuario,
-        correo=usuario.correo,
-        rol=usuario.rol,
-        estado=usuario.estado,
-        mensaje="Login exitoso"
-    )
+        id_paciente = int(row[0]) if row else None
+        if id_paciente:
+            paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == id_paciente).first()
+            if paciente:
+                nombre = f"{paciente.nombre} {paciente.apellido}".strip()
+    elif role == "dentist":
+        odontologo = db.query(models.Odontologo).filter(models.Odontologo.correo.ilike(usuario.correo)).first()
+        if odontologo:
+            id_odontologo = odontologo.id_odontologo
+            nombre = f"{odontologo.nombre} {odontologo.apellido}".strip()
+
+    usuario.ultimo_acceso = __import__("datetime").datetime.utcnow()
+    db.commit()
+
+    return {
+        "id_usuario": usuario.id_usuario,
+        "id_paciente": id_paciente,
+        "id_odontologo": id_odontologo,
+        "correo": usuario.correo,
+        "nombre": nombre,
+        "rol": role,
+        "estado": usuario.estado,
+        "mensaje": "Login exitoso",
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_at": int(expires_at.timestamp()),
+    }
 
 
-# ── REGISTRO COMPLETO (Usuario + Paciente) ──────────────────────────────────
+@router.get("/me")
+def me(request: Request, db: Session = Depends(get_db)):
+    """Devuelve sólo identidad mínima del usuario autenticado."""
+    current = get_current_user(request)
+    usuario = db.query(models.Usuario).filter(models.Usuario.id_usuario == int(current["sub"])).first()
+    if not usuario or usuario.estado != "Activo":
+        raise HTTPException(status_code=401, detail="La sesión ya no es válida")
+    role = normalize_role(usuario.rol)
+    id_paciente = None
+    id_odontologo = None
+    nombre = usuario.nombre
+    if role == "patient":
+        row = (
+            db.query(models.usuario_paciente.c.id_paciente)
+            .filter(models.usuario_paciente.c.id_usuario == usuario.id_usuario)
+            .first()
+        )
+        id_paciente = int(row[0]) if row else None
+        if id_paciente:
+            paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == id_paciente).first()
+            if paciente:
+                nombre = f"{paciente.nombre} {paciente.apellido}".strip()
+    elif role == "dentist":
+        odontologo = db.query(models.Odontologo).filter(models.Odontologo.correo.ilike(usuario.correo)).first()
+        if odontologo:
+            id_odontologo = odontologo.id_odontologo
+            nombre = f"{odontologo.nombre} {odontologo.apellido}".strip()
+    return {
+        "id_usuario": usuario.id_usuario,
+        "id_paciente": id_paciente,
+        "id_odontologo": id_odontologo,
+        "correo": usuario.correo,
+        "nombre": nombre,
+        "rol": role,
+        "estado": usuario.estado,
+    }
+
 
 @router.post("/registro", response_model=schemas.RegistroResponse, status_code=status.HTTP_201_CREATED)
 def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db)):
-    """
-    Registro completo desde el frontend.
-    Crea un usuario con rol 'Paciente' y un paciente asociado.
-    """
-    # Validar correo
-    if not validar_correo(data.correo):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico no tiene un formato válido"
-        )
-    
-    # Verificar que el correo no esté registrado
-    existing_user = db.query(models.Usuario).filter(
-        models.Usuario.correo == data.correo
-    ).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo electrónico ya está registrado"
-        )
-    
-    # Validar contraseña
-    if len(data.contrasena) < 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="La contraseña debe tener al menos 6 caracteres"
-        )
-    
-    try:
-        # 1. Crear el usuario
-        nuevo_usuario = models.Usuario(
-            correo=data.correo,
-            contrasena=hash_password(data.contrasena),
-            rol="Paciente",
-            estado="Activo"
-        )
-        db.add(nuevo_usuario)
-        db.flush()
-        
-        # 2. Generar documento único para el paciente
-        documento = generar_documento_unico(db)
-        
-        # 3. Crear el paciente asociado
-        nuevo_paciente = models.Paciente(
-            nombre=data.nombre,
-            apellido=data.apellido,
-            documento=documento,
-            telefono=data.telefono,
-            correo=data.correo
-        )
-        db.add(nuevo_paciente)
-        db.flush()
-        
-        # 4. Crear la relación usuario-paciente
-        stmt = models.usuario_paciente.insert().values(
-            id_usuario=nuevo_usuario.id_usuario,
-            id_paciente=nuevo_paciente.id_paciente
-        )
-        db.execute(stmt)
-        db.commit()
-        
-        return schemas.RegistroResponse(
-            mensaje="Usuario y paciente registrados exitosamente",
-            id_usuario=nuevo_usuario.id_usuario,
-            id_paciente=nuevo_paciente.id_paciente,
-            correo=nuevo_usuario.correo,
-            rol=nuevo_usuario.rol
-        )
-        
-    except IntegrityError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Error al registrar: {str(e)}"
-        )
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error inesperado: {str(e)}"
-        )
+    """Registro público de paciente; nunca permite autoasignar roles privilegiados."""
+    email = str(data.correo).strip().lower()
+    if not validar_correo(email):
+        raise HTTPException(status_code=400, detail="Correo electrónico no válido")
+    if len(data.contrasena) < 8:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
+    if db.query(models.Usuario).filter(models.Usuario.correo == email).first():
+        raise HTTPException(status_code=409, detail="El correo electrónico ya está registrado")
 
+    try:
+        documento = (data.documento or "").strip() or generar_documento_unico(db)
+        usuario = models.Usuario(
+            correo=email, contrasena=hash_password(data.contrasena), rol="Paciente", estado="Activo",
+            nombre=(data.nombre or "").strip() or None, apellido=(data.apellido or "").strip() or None,
+            documento=documento, telefono=(data.telefono or "").strip() or None,
+        )
+        db.add(usuario)
+        db.flush()
+
+        paciente = models.Paciente(
+            nombre=(data.nombre or "Paciente").strip(), apellido=(data.apellido or "").strip(), documento=documento,
+            telefono=(data.telefono or "").strip() or None, correo=email,
+            fecha_nacimiento=data.fecha_nacimiento, genero=data.genero, direccion=data.direccion,
+            eps=data.eps, alergias=data.alergias,
+        )
+        db.add(paciente)
+        db.flush()
+        db.execute(models.usuario_paciente.insert().values(id_usuario=usuario.id_usuario, id_paciente=paciente.id_paciente))
+        db.commit()
+
+        return {
+            "mensaje": "Usuario y paciente registrados exitosamente",
+            "id_usuario": usuario.id_usuario, "id_paciente": paciente.id_paciente, "id_odontologo": None,
+            "correo": usuario.correo, "rol": "Paciente",
+        }
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="No fue posible completar el registro") from exc
