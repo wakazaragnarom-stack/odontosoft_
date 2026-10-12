@@ -135,6 +135,11 @@ def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db
         )
         db.add(paciente)
         db.flush()
+        db.add(models.Odontograma(
+            id_paciente=paciente.id_paciente,
+            dientes={},
+            fecha_actualizacion=__import__('datetime').datetime.utcnow(),
+        ))
         db.execute(models.usuario_paciente.insert().values(id_usuario=usuario.id_usuario, id_paciente=paciente.id_paciente))
         db.commit()
 
