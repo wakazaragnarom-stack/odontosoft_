@@ -21,22 +21,14 @@ def get_pacientes(
     db: Session = Depends(get_db),
     user: dict = Depends(require_staff()),
 ):
-    try:
-        query = (
-            db.query(models.Paciente)
-            .join(models.usuario_paciente, models.usuario_paciente.c.id_paciente == models.Paciente.id_paciente)
-            .join(models.Usuario, models.Usuario.id_usuario == models.usuario_paciente.c.id_usuario)
-            .filter(models.Usuario.rol == "Paciente", models.Usuario.estado == "Activo")
-        )
-        if user["role"] == "dentist":
-            ids = dentist_patient_ids(db, user)
-            if not ids:
-                return []
-            query = query.filter(models.Paciente.id_paciente.in_(ids))
-        return query.distinct().all()
-    except Exception as e:
-        print(f"❌ Error al obtener pacientes: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error al obtener pacientes")
+    """Lista pacientes; odontología sólo ve pacientes con citas asignadas."""
+    query = db.query(models.Paciente)
+    if user["role"] == "dentist":
+        ids = dentist_patient_ids(db, user)
+        if not ids:
+            return []
+        query = query.filter(models.Paciente.id_paciente.in_(ids))
+    return query.order_by(models.Paciente.id_paciente).all()
 
 
 @router.get("/{id}", response_model=schemas.PacienteOut)
@@ -77,6 +69,12 @@ def create_paciente(
     nuevo_paciente = models.Paciente(**payload)
     try:
         db.add(nuevo_paciente)
+        db.flush()
+        db.add(models.Odontograma(
+            id_paciente=nuevo_paciente.id_paciente,
+            dientes={},
+            fecha_actualizacion=__import__('datetime').datetime.utcnow(),
+        ))
         db.commit()
         db.refresh(nuevo_paciente)
         return nuevo_paciente
