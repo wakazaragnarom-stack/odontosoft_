@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import models, schemas
 from database import get_db
-from security import require_patient_resource
+from security import require_patient_resource, require_staff
 
 router = APIRouter(prefix="/odontogramas", tags=["Odontogramas"])
 
@@ -30,6 +30,7 @@ def save_odontograma(
     data: schemas.OdontogramaCreate,
     db: Session = Depends(get_db),
     _user: dict = Depends(require_patient_resource("paciente_id")),
+    _staff: dict = Depends(require_staff()),
 ):
     if paciente_id != data.id_paciente:
         raise HTTPException(status_code=400, detail="El paciente no coincide con la información enviada")
