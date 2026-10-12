@@ -5,25 +5,25 @@ import {
   createRol, createServicio, createTratamiento, createUsuario, createPago,
   deleteConsultorio, deleteOdontologo, deleteProveedor, deleteRecordatorio, deleteRol, deleteUsuario,
   getConsultorios, getCitas, getCitasPaciente, getFacturas, getHistoriaDetallada,
-  getOdontograma, getOdontologos, getPacientes, getPagos, getProveedores, getRecordatorios,
-  getRoles, getServicios, getTratamientos, getUsuarios, updateEstadoCita, updateHistoriaDetallada,
-  updateOdontograma
+  getOdontologos, getPacientes, getPagos, getProveedores, getRecordatorios,
+  getRoles, getServicios, getTratamientos, getUsuarios, updateEstadoCita, updateHistoriaDetallada
 } from '../api.js';
 import type { User } from '../types';
+import Odontogram from './Odontogram';
 
-type Section = 'dashboard'|'users'|'patients'|'appointments'|'clinical'|'treatments'|'billing'|'suppliers'|'consultorios'|'dentists'|'roles'|'reminders'|'services';
+type Section = 'dashboard'|'users'|'patients'|'appointments'|'clinical'|'odontogram'|'treatments'|'billing'|'suppliers'|'consultorios'|'dentists'|'roles'|'reminders'|'services';
 type Props = { user: User & { id_paciente?: number; id_odontologo?: number; nombre?: string }; onLogout: () => void };
 
 const roleNames: Record<string,string> = { superadmin:'Superadministrador', clinic_admin:'Administrador', dentist:'Odontólogo', patient:'Paciente' };
 const sections: Record<string,Section[]> = {
-  patient:['dashboard','appointments','clinical','services','billing'],
-  dentist:['dashboard','appointments','patients','clinical','treatments','services','consultorios'],
-  clinic_admin:['dashboard','users','patients','appointments','clinical','treatments','billing','suppliers','consultorios','dentists','roles','reminders','services'],
-  superadmin:['dashboard','users','patients','appointments','clinical','treatments','billing','suppliers','consultorios','dentists','roles','reminders','services'],
+  patient:['dashboard','appointments','clinical','odontogram','services','billing'],
+  dentist:['dashboard','appointments','patients','clinical','odontogram','treatments','services','consultorios'],
+  clinic_admin:['dashboard','users','patients','appointments','clinical','odontogram','treatments','billing','suppliers','consultorios','dentists','roles','reminders','services'],
+  superadmin:['dashboard','users','patients','appointments','clinical','odontogram','treatments','billing','suppliers','consultorios','dentists','roles','reminders','services'],
 };
 const labels: Record<Section,string> = {
   dashboard:'Resumen', users:'Usuarios', patients:'Pacientes', appointments:'Citas',
-  clinical:'Historia clínica', treatments:'Tratamientos', billing:'Pagos y facturas',
+  clinical:'Historia clínica', odontogram:'Odontograma', treatments:'Tratamientos', billing:'Pagos y facturas',
   suppliers:'Proveedores', consultorios:'Consultorios', dentists:'Odontólogos',
   roles:'Roles', reminders:'Recordatorios', services:'Servicios',
 };
@@ -45,6 +45,7 @@ export default function BackOffice({user,onLogout}: Props){
       {section==='patients' && <SimpleCrud title="Pacientes" load={getPacientes} create={createPaciente} columns={['id_paciente','nombre','apellido','documento','correo','telefono']} fields={['nombre','apellido','documento','correo','telefono','fecha_nacimiento','genero','direccion','eps','alergias']}/>}
       {section==='appointments' && <Appointments user={user}/>}
       {section==='clinical' && <Clinical user={user}/>}
+      {section==='odontogram' && <Odontogram user={user}/>}
       {section==='treatments' && <SimpleCrud title="Tratamientos" load={getTratamientos} create={createTratamiento} columns={['id_tratamiento','nombre','descripcion','costo','duracion_estimada']} fields={['nombre','descripcion','costo','duracion_estimada']}/>}
       {section==='billing' && <Billing role={user.role} />}
       {section==='suppliers' && <SimpleCrud title="Proveedores" load={getProveedores} create={createProveedor} remove={deleteProveedor} columns={['id','empresa','contacto_asesor','telefono','suministro','estado_convenio']} fields={['empresa','contacto_asesor','telefono','suministro','estado_convenio']}/>}
@@ -124,7 +125,33 @@ function Appointments({user}:any){
 
 
 function Clinical({user}:any){
-  const [patients,setPatients]=useState<any[]>([]);const [patient,setPatient]=useState<any>(null);const [odonto,setOdonto]=useState<any>({dientes:{}});const [detail,setDetail]=useState<any>({datos_clinicos:{}});const [tooth,setTooth]=useState('11');const [state,setState]=useState('healthy');const select=async(id:number)=>{const p=await (await import('../api.js')).getPaciente(id);const v=await Promise.all([getOdontograma(id),getHistoriaDetallada(id)]);setPatient(p);setOdonto(v[0]||{dientes:{}});setDetail(v[1]||{datos_clinicos:{}});};useEffect(()=>{if(user.role==='patient'){if(user.id_paciente)void select(user.id_paciente);}else getPacientes().then(setPatients).catch(()=>{});},[user]);return <Page title={user.role==='patient'?'Mi historia clínica':'Historia clínica'}>{user.role!=='patient'&&<Card><select className="field" value={patient?.id_paciente||''} onChange={e=>void select(Number(e.target.value))}><option value="">Selecciona paciente</option>{patients.map(p=><option key={p.id_paciente} value={p.id_paciente}>{p.nombre} {p.apellido}</option>)}</select></Card>}{patient&&<div className="grid xl:grid-cols-2 gap-5"><Card><h3 className="font-black">{patient.nombre} {patient.apellido}</h3><div className="grid grid-cols-3 gap-2 mt-4"><input className="field" type="number" value={tooth} onChange={e=>setTooth(e.target.value)}/><select className="field" value={state} onChange={e=>setState(e.target.value)}><option value="healthy">Sano</option><option value="caries">Caries</option><option value="filled">Obturado</option><option value="crown">Corona</option><option value="missing">Ausente</option><option value="implant">Implante</option><option value="root_canal">Endodoncia</option></select><button onClick={async()=>{const dientes={...(odonto.dientes||{}),[tooth]:{status:state}};setOdonto(await updateOdontograma(patient.id_paciente,{id_paciente:patient.id_paciente,dientes}));}} className="btn">Guardar diente</button></div><div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-4">{Object.entries(odonto.dientes||{}).map((v:any)=><div key={v[0]} className="border rounded-lg p-2 text-center text-xs"><b>{v[0]}</b><div>{v[1]?.status||v[1]?.estado}</div></div>)}</div></Card><Card><h3 className="font-black">Datos clínicos</h3><div className="space-y-2 mt-3">{['motivo_consulta','antecedentes_medicos','alergias_especificas','presion_arterial','enfermedades_sistemicas','medicacion_actual','habitos','diagnostico_periodontal','observaciones_generales'].map(k=><textarea key={k} className="field min-h-16" placeholder={k.replaceAll('_',' ')} value={detail.datos_clinicos?.[k]||''} onChange={e=>setDetail({...detail,datos_clinicos:{...(detail.datos_clinicos||{}),[k]:e.target.value}})}/>)}</div><button onClick={async()=>setDetail(await updateHistoriaDetallada(patient.id_paciente,{id_paciente:patient.id_paciente,datos_clinicos:detail.datos_clinicos||{}}))} className="btn mt-3"><Save className="w-4 h-4"/>Guardar</button></Card></div>}{!patient&&<Card><div className="py-10 text-center text-slate-400">Selecciona un paciente.</div></Card>}</Page>;
+  const [patients,setPatients]=useState<any[]>([]);
+  const [patient,setPatient]=useState<any>(null);
+  const [detail,setDetail]=useState<any>({datos_clinicos:{}});
+  const [error,setError]=useState('');
+  const [loading,setLoading]=useState(false);
+  const select=async(id:number)=>{
+    if(!id)return;
+    setLoading(true);setError('');
+    try{
+      const p=await (await import('../api.js')).getPaciente(id);
+      let v:any={datos_clinicos:{}};
+      try{v=await getHistoriaDetallada(id)||v;}catch{ /* La ficha detallada puede no existir todavía. */ }
+      setPatient(p);setDetail({...v,datos_clinicos:v.datos_clinicos||{}});
+    }catch(e:any){setError(e.message||'No se pudo abrir la historia clínica.');}
+    finally{setLoading(false);}
+  };
+  useEffect(()=>{
+    if(user.role==='patient'){if(user.id_paciente)void select(user.id_paciente);}
+    else getPacientes().then(setPatients).catch((e:any)=>setError(e.message||'No se pudieron cargar pacientes.'));
+  },[user.role,user.id_paciente]);
+  return <Page title={user.role==='patient'?'Mi historia clínica':'Historia clínica'}>
+    {user.role!=='patient'&&<Card><label className="block text-sm font-semibold mb-2">Selecciona un paciente</label><select className="field" value={patient?.id_paciente||''} onChange={e=>void select(Number(e.target.value))}><option value="">Selecciona paciente</option>{patients.map(p=><option key={p.id_paciente} value={p.id_paciente}>{p.nombre} {p.apellido}</option>)}</select></Card>}
+    {error&&<p className="text-sm text-rose-600">{error}</p>}
+    {loading&&<p className="text-sm text-slate-500">Cargando historia clínica…</p>}
+    {patient&&<Card><div className="mb-4"><h3 className="font-black text-lg">{patient.nombre} {patient.apellido}</h3><p className="text-sm text-slate-500">Documento: {patient.documento||'—'} · Paciente #{patient.id_paciente}</p><p className="text-xs text-slate-500 mt-2">El odontograma tiene su propia sección en el menú lateral.</p></div><h3 className="font-black">Datos clínicos</h3><div className="space-y-2 mt-3">{['motivo_consulta','antecedentes_medicos','alergias_especificas','presion_arterial','enfermedades_sistemicas','medicacion_actual','habitos','diagnostico_periodontal','observaciones_generales'].map(k=><label key={k} className="block"><span className="block text-xs font-semibold text-slate-500 capitalize mb-1">{k.replaceAll('_',' ')}</span><textarea className="field min-h-16" value={detail.datos_clinicos?.[k]||''} onChange={e=>setDetail({...detail,datos_clinicos:{...(detail.datos_clinicos||{}),[k]:e.target.value}})}/></label>)}</div>{user.role!=='patient'&&<button onClick={async()=>{try{setError('');setDetail(await updateHistoriaDetallada(patient.id_paciente,{id_paciente:patient.id_paciente,datos_clinicos:detail.datos_clinicos||{}}));}catch(e:any){setError(e.message||'No se pudo guardar la historia clínica.');}}} className="btn mt-3"><Save className="w-4 h-4"/>Guardar historia</button>}</Card>}
+    {!patient&&!loading&&<Card><div className="py-10 text-center text-slate-400">Selecciona un paciente para consultar su historia clínica.</div></Card>}
+  </Page>;
 }
 
 function Billing({role}:{role:string}){
