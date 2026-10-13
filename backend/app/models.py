@@ -212,6 +212,26 @@ class Paciente(Base):
 
 
 # ============================================================
+# EMPRESA CLIENTE DE ODONTOSOFT (SaaS)
+# ============================================================
+
+class Empresa(Base):
+    __tablename__ = "empresa_odontosoft"
+    __table_args__ = {"extend_existing": True}
+
+    id_empresa = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String(200), nullable=False)
+    correo_contacto = Column(String(150), nullable=False)
+    telefono = Column(String(30), nullable=True)
+    cuota_mensual = Column(Numeric(12, 2), nullable=False, default=0)
+    fecha_vencimiento = Column(Date, nullable=True)
+    fecha_ultimo_pago = Column(Date, nullable=True)
+    estado_pago = Column(String(20), nullable=False, default="pendiente")
+    estado_servicio = Column(String(20), nullable=False, default="activo")
+    fecha_creacion = Column(TIMESTAMP, nullable=False, default=__import__("datetime").datetime.utcnow)
+
+
+# ============================================================
 # USUARIO
 # ============================================================
 
@@ -251,6 +271,9 @@ class Usuario(Base):
         nullable=False,
         default="Activo"
     )
+
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="SET NULL"), nullable=True, index=True)
+    empresa = relationship("Empresa")
 
     # ========================================================
     # DATOS PERSONALES DEL USUARIO

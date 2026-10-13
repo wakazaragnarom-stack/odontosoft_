@@ -100,3 +100,8 @@ export const getServiciosPaciente = (pid) => request("GET", `/servicios/paciente
 export const createServicio = (data) => request("POST", "/servicios", data);
 export const updateServicio = (id, data) => request("PUT", `/servicios/${id}`, data);
 export const deleteServicio = (id) => request("DELETE", `/servicios/${id}`);
+
+// Consola SaaS exclusiva del SuperAdmin.
+export const getEmpresasSaaS = () => request("GET", "/superadmin/empresas");
+export const createEmpresaSaaS = (data) => request("POST", "/superadmin/empresas", data);
+export const updateEmpresaSaaS = (id, data) => request("PATCH", `/superadmin/empresas/${id}`, data);

@@ -32,21 +32,22 @@ PUBLIC_PATHS = {
 }
 
 MODULE_ROLES = {
-    "/usuarios": {"superadmin", "clinic_admin"},
-    "/roles": {"superadmin", "clinic_admin"},
-    "/proveedores": {"superadmin", "clinic_admin", "proveedores"},
-    "/consultorios": {"superadmin", "clinic_admin", "dentist"},
-    "/odontologos": {"superadmin", "clinic_admin", "dentist"},
-    "/tratamientos": {"superadmin", "clinic_admin", "dentist"},
-    "/pacientes": {"superadmin", "clinic_admin", "dentist", "patient"},
-    "/historias-clinicas": {"superadmin", "clinic_admin", "dentist", "patient"},
-    "/historias-clinicas-detalladas": {"superadmin", "clinic_admin", "dentist", "patient"},
-    "/odontogramas": {"superadmin", "clinic_admin", "dentist", "patient"},
-    "/citas": {"superadmin", "clinic_admin", "dentist", "patient"},
-    "/recordatorios": {"superadmin", "clinic_admin", "dentist"},
-    "/pagos": {"superadmin", "clinic_admin"},
-    "/facturas": {"superadmin", "clinic_admin", "patient"},
-    "/servicios": {"superadmin", "clinic_admin", "dentist", "patient"},
+    "/superadmin": {"superadmin"},
+    "/usuarios": {"clinic_admin"},
+    "/roles": {"clinic_admin"},
+    "/proveedores": {"clinic_admin", "proveedores"},
+    "/consultorios": {"clinic_admin", "dentist"},
+    "/odontologos": {"clinic_admin", "dentist"},
+    "/tratamientos": {"clinic_admin", "dentist"},
+    "/pacientes": {"clinic_admin", "dentist", "patient"},
+    "/historias-clinicas": {"clinic_admin", "dentist", "patient"},
+    "/historias-clinicas-detalladas": {"clinic_admin", "dentist", "patient"},
+    "/odontogramas": {"clinic_admin", "dentist", "patient"},
+    "/citas": {"clinic_admin", "dentist", "patient"},
+    "/recordatorios": {"clinic_admin", "dentist"},
+    "/pagos": {"clinic_admin"},
+    "/facturas": {"clinic_admin", "patient"},
+    "/servicios": {"clinic_admin", "dentist", "patient"},
 }
 
 ROLE_ALIASES = {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getAccessToken, getCurrentUser, clearAccessToken } from '../shared/api/client.js';
 import AuthScreen from '../features/auth/AuthScreen';
 import BackOffice from '../features/backoffice/BackOffice';
+import SuperAdmin from '../features/superadmin/SuperAdmin';
 import type { User } from '../shared/types';
 
 type SessionUser = User & { id_paciente?: number; id_odontologo?: number; nombre?: string };
@@ -39,7 +40,9 @@ export default function UnifiedApp() {
     return <AuthScreen onAuthenticated={(result: any) => setUser(mapSessionUser(result))} />;
   }
 
-  return <BackOffice user={user} onLogout={() => { clearAccessToken(); setUser(null); }} />;
+  const logout = () => { clearAccessToken(); setUser(null); };
+  if (user.role === 'superadmin') return <SuperAdmin user={user} onLogout={logout} />;
+  return <BackOffice user={user} onLogout={logout} />;
 }
 
 function mapSessionUser(result: any): SessionUser {

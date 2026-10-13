@@ -124,7 +124,7 @@ from backend.app.api.routes import (
     auth, usuarios, pacientes, odontologos, consultorios,
     historias_clinicas, citas, tratamientos, recordatorios,
     pagos, facturas, roles, proveedores, servicios,
-    historias_clinicas_detalladas, odontogramas, password_reset,
+    historias_clinicas_detalladas, odontogramas, password_reset, superadmin,
 )
 
 for module in (
@@ -145,6 +145,7 @@ for module in (
     historias_clinicas_detalladas,
     odontogramas,
     password_reset,
+    superadmin,
 ):
     app.include_router(module.router)
 

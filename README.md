@@ -92,3 +92,10 @@ GitHub Actions también comprueba el tipado, el build de frontend, la compilaci�
 Ejecuta una sola vez database/migrations/002_google_calendar.sql sobre la base de datos correcta. La API no aplica migraciones automáticamente. PostgreSQL sigue siendo la fuente principal; si Google no está configurado o no responde, la operación de cita continúa y el error queda en los logs. Se usa America/Bogota y se minimizan los datos visibles en el calendario compartido.
 
 No subas el JSON de credenciales ni secretos SMTP a GitHub.
+
+
+## Consola SuperAdmin SaaS
+
+La consola SuperAdmin registra empresas cliente, consulta cuotas y vencimientos, y marca pagos o suspensiones. Ejecuta `database/migrations/003_superadmin_empresas.sql` una sola vez sobre PostgreSQL antes de iniciar la API. Para crear el único SuperAdmin, ejecuta `python -m scripts.create_superadmin` desde la raíz y escribe el correo reservado `darekpumajoseph@gmail.com` y la contraseña en la terminal (la entrada queda oculta). No se incluye ninguna contraseña en Git.
+
+**Importante:** esta entrega separa la consola y deniega al SuperAdmin los endpoints de operación clínica. El aislamiento de datos entre múltiples empresas aún requiere migrar las tablas clínicas existentes y aplicar filtros por `id_empresa` en todas las rutas; no debe usarse todavía como una plataforma multiempresa con datos reales de varias clínicas en una misma base compartida.
