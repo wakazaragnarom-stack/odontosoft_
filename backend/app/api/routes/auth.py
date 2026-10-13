@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from backend.app import auth_schemas
 from backend.app import models
 from backend.app import schemas
-from backend.app.db.session import get_db
+from backend.app.db.session import get_db, current_tenant_id
 from backend.app.core.security import create_access_token, get_current_user, normalize_role
 from backend.app.utils import generar_documento_unico, hash_password, needs_password_rehash, validar_correo, verify_password
 
@@ -106,6 +106,21 @@ def me(request: Request, db: Session = Depends(get_db)):
     }
 
 
+@router.get("/clinicas-disponibles")
+def clinicas_disponibles(db: Session = Depends(get_db)):
+    """Solo publica nombre e identificador de clínicas habilitadas para registro."""
+    from datetime import date
+    return [
+        {"id_empresa": e.id_empresa, "nombre": e.nombre}
+        for e in db.query(models.Empresa).filter(
+            models.Empresa.estado_pago == "al_dia",
+            models.Empresa.estado_servicio == "activo",
+            models.Empresa.nombre != "OdontoSoft",
+        ).order_by(models.Empresa.nombre).all()
+        if e.fecha_vencimiento is None or e.fecha_vencimiento >= date.today()
+    ]
+
+
 @router.post("/registro", response_model=schemas.RegistroResponse, status_code=status.HTTP_201_CREATED)
 def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db)):
     """Registro público de paciente; nunca permite autoasignar roles privilegiados."""
@@ -117,12 +132,23 @@ def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db
     if db.query(models.Usuario).filter(models.Usuario.correo == email).first():
         raise HTTPException(status_code=409, detail="El correo electrónico ya está registrado")
 
+    from datetime import date
+    empresa = db.query(models.Empresa).filter(
+        models.Empresa.id_empresa == data.id_empresa,
+        models.Empresa.estado_pago == "al_dia",
+        models.Empresa.estado_servicio == "activo",
+        models.Empresa.nombre != "OdontoSoft",
+    ).first()
+    if not empresa or (empresa.fecha_vencimiento and empresa.fecha_vencimiento < date.today()):
+        raise HTTPException(status_code=400, detail="Selecciona una clínica activa para registrarte")
+
+    tenant_reset = current_tenant_id.set(empresa.id_empresa)
     try:
         documento = (data.documento or "").strip() or generar_documento_unico(db)
         usuario = models.Usuario(
             correo=email, contrasena=hash_password(data.contrasena), rol="Paciente", estado="Activo",
             nombre=(data.nombre or "").strip() or None, apellido=(data.apellido or "").strip() or None,
-            documento=documento, telefono=(data.telefono or "").strip() or None,
+            documento=documento, telefono=(data.telefono or "").strip() or None, id_empresa=empresa.id_empresa,
         )
         db.add(usuario)
         db.flush()
@@ -131,7 +157,7 @@ def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db
             nombre=(data.nombre or "Paciente").strip(), apellido=(data.apellido or "").strip(), documento=documento,
             telefono=(data.telefono or "").strip() or None, correo=email,
             fecha_nacimiento=data.fecha_nacimiento, genero=data.genero, direccion=data.direccion,
-            eps=data.eps, alergias=data.alergias,
+            eps=data.eps, alergias=data.alergias, id_empresa=empresa.id_empresa,
         )
         db.add(paciente)
         db.flush()
@@ -151,3 +177,5 @@ def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="No fue posible completar el registro") from exc
+    finally:
+        current_tenant_id.reset(tenant_reset)
