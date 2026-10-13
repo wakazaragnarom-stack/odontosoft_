@@ -8,7 +8,6 @@ from backend.app import models
 from backend.app import schemas
 from backend.app.db.session import get_db
 from backend.app.services.notifications import NotificationService
-from backend.app.services import google_calendar
 from backend.app.core.security import dentist_id_for_user, require_appointment_resource, require_patient_resource, require_roles, require_staff
 
 router = APIRouter(prefix="/citas", tags=["Citas"])
@@ -90,11 +89,6 @@ def create_cita(data: schemas.CitaCreate, background_tasks: BackgroundTasks, db:
     db.commit()
     db.refresh(nueva)
     cita_creada = db.query(models.Cita).options(selectinload(models.Cita.tratamientos), selectinload(models.Cita.odontologo)).filter(models.Cita.id_cita == nueva.id_cita).first()
-    event_id = google_calendar.create_event(cita_creada, odontologo, paciente, consultorio)
-    if event_id:
-        cita_creada.google_calendar_event_id = event_id
-        db.commit()
-        db.refresh(cita_creada)
     if odontologo.correo:
         background_tasks.add_task(
             NotificationService.enviar_notificacion_cita_odontologo,
@@ -145,18 +139,7 @@ def update_cita(id: int, data: schemas.CitaUpdate, background_tasks: BackgroundT
     paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == cita_actualizada.id_paciente).first()
     odontologo_actual = db.query(models.Odontologo).filter(models.Odontologo.id_odontologo == cita_actualizada.id_odontologo).first()
     consultorio_actual = db.query(models.Consultorio).filter(models.Consultorio.id_consultorio == cita_actualizada.id_consultorio).first()
-    event_id = cita_actualizada.google_calendar_event_id
-    if odontologo_anterior_id != cita_actualizada.id_odontologo and event_id:
-        google_calendar.delete_event(event_id)
-        event_id = None
     if paciente and odontologo_actual and consultorio_actual:
-        synced_event_id = (
-            google_calendar.update_event(event_id, cita_actualizada, odontologo_actual, paciente, consultorio_actual)
-            if event_id else google_calendar.create_event(cita_actualizada, odontologo_actual, paciente, consultorio_actual)
-        )
-        if synced_event_id:
-            cita_actualizada.google_calendar_event_id = synced_event_id
-            db.commit()
         if odontologo_actual.correo:
             accion = "asignada" if odontologo_anterior_id != cita_actualizada.id_odontologo else "reprogramada"
             background_tasks.add_task(
@@ -187,9 +170,6 @@ def update_estado_cita(id: int, payload: dict, db: Session = Depends(get_db), us
     estado_anterior = cita.estado
     cita.estado = nuevo_estado
     if nuevo_estado == "Cancelada" and estado_anterior != "Cancelada":
-        if cita.google_calendar_event_id:
-            google_calendar.delete_event(cita.google_calendar_event_id)
-            cita.google_calendar_event_id = None
         odontologo = db.query(models.Odontologo).filter(models.Odontologo.id_odontologo == cita.id_odontologo).first()
         paciente = db.query(models.Paciente).filter(models.Paciente.id_paciente == cita.id_paciente).first()
         if odontologo and odontologo.correo:
@@ -209,8 +189,6 @@ def delete_cita(id: int, db: Session = Depends(get_db), user: dict = Depends(req
     cita = db.query(models.Cita).filter(models.Cita.id_cita == id).first()
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
-    if cita.google_calendar_event_id:
-        google_calendar.delete_event(cita.google_calendar_event_id)
     db.delete(cita)
     db.commit()
     return {"mensaje": "Cita eliminada correctamente", "id_cita": id}
