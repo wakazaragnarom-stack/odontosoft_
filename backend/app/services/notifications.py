@@ -159,3 +159,31 @@ class NotificationService:
         except Exception as e:
             print(f"Error al enviar correo de restablecimiento: {e}")
             return False
+
+    @staticmethod
+    async def enviar_notificacion_cita_odontologo(
+        email_destino: str, nombre_odontologo: str, nombre_paciente: str,
+        fecha_cita: str, hora_cita: str, accion: str,
+    ) -> bool:
+        from html import escape
+        labels = {
+            "asignada": ("Nueva cita asignada", "Se te ha asignado una nueva cita."),
+            "reprogramada": ("Cita reprogramada", "La fecha u hora de una cita ha cambiado."),
+            "cancelada": ("Cita cancelada", "Una cita de tu agenda ha sido cancelada."),
+        }
+        subject, message_text = labels.get(accion, ("Actualización de cita", "Una cita de tu agenda ha cambiado."))
+        html_content = f"""<!doctype html><html lang="es"><head><meta charset="utf-8"></head>
+        <body style="font-family:Arial,sans-serif;color:#202b3c;line-height:1.6">
+        <div style="max-width:600px;margin:auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px">
+        <h2 style="color:#147d73">OdontoSoft</h2><h3>{subject}</h3>
+        <p>Hola <strong>{escape(nombre_odontologo)}</strong>,</p><p>{message_text}</p>
+        <p><strong>Paciente:</strong> {escape(nombre_paciente)}<br>
+        <strong>Fecha:</strong> {escape(fecha_cita)}<br><strong>Hora:</strong> {escape(hora_cita)}</p>
+        <p>Consulta la información clínica únicamente dentro de OdontoSoft.</p></div></body></html>"""
+        try:
+            await NotificationService.send_email(email_destino, f"{subject} — OdontoSoft", html_content)
+            return True
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("No se pudo notificar al odontólogo")
+            return False

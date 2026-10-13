@@ -571,6 +571,8 @@ class Cita(Base):
         default="Pendiente"
     )
 
+    google_calendar_event_id = Column(String(255), nullable=True, index=True)
+
     motivo_consulta = Column(
         Text,
         nullable=True

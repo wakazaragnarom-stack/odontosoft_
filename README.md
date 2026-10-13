@@ -79,3 +79,16 @@ GitHub Actions también comprueba el tipado, el build de frontend, la compilaci�
 ## Seguridad de secretos
 
 .env, contraseñas y claves privadas deben permanecer fuera del repositorio. .env.example es sólo una plantilla sin credenciales reales.
+
+
+## Google Calendar compartido y avisos a odontólogos
+
+1. En Google Cloud activa Google Calendar API y crea una cuenta de servicio.
+2. Descarga el JSON de credenciales y guárdalo fuera del repositorio.
+3. Crea el calendario de la clínica y compártelo con el correo de la cuenta de servicio, con permiso para modificar eventos.
+4. Configura GOOGLE_CALENDAR_ID y GOOGLE_CALENDAR_CREDENTIALS_FILE en .env. La ruta al JSON debe ser accesible desde el backend.
+5. Configura SMTP real (MAIL_USERNAME, MAIL_PASSWORD y MAIL_FROM) para enviar correos.
+
+Ejecuta una sola vez database/migrations/002_google_calendar.sql sobre la base de datos correcta. La API no aplica migraciones automáticamente. PostgreSQL sigue siendo la fuente principal; si Google no está configurado o no responde, la operación de cita continúa y el error queda en los logs. Se usa America/Bogota y se minimizan los datos visibles en el calendario compartido.
+
+No subas el JSON de credenciales ni secretos SMTP a GitHub.
