@@ -9,9 +9,9 @@ Requiere que .env esté configurado y PostgreSQL esté disponible.
 from getpass import getpass
 from sqlalchemy.exc import IntegrityError
 
-import models
-from database import SessionLocal
-from utils import hash_password, validar_correo
+from backend.app import models
+from backend.app.db.session import SessionLocal
+from backend.app.utils import hash_password, validar_correo
 
 
 def main() -> None:

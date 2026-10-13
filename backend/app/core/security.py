@@ -13,8 +13,8 @@ from fastapi import HTTPException, Request, status, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from database import SessionLocal
-import models
+from backend.app.db.session import SessionLocal
+from backend.app import models
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_SECRET = os.getenv("JWT_SECRET")

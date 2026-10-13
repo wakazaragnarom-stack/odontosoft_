@@ -11,7 +11,7 @@ import string
 import bcrypt
 from sqlalchemy.orm import Session
 
-import models
+from backend.app import models
 
 BCRYPT_ROUNDS = int(os.getenv("BCRYPT_ROUNDS", "12"))
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
