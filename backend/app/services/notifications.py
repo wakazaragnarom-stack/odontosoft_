@@ -107,7 +107,7 @@ class NotificationService:
     ) -> bool:
         """Envía el correo con el enlace para restablecer la contraseña."""
 
-        reset_link = f"{FRONTEND_URL}/reset-password.html?token={token}"
+        reset_link = f"{FRONTEND_URL.rstrip('/')}/?reset_token={token}"
 
         html_content = f"""
         <!DOCTYPE html>
