@@ -142,7 +142,9 @@ def registro_usuario(data: schemas.RegistroRequest, db: Session = Depends(get_db
     if not empresa or (empresa.fecha_vencimiento and empresa.fecha_vencimiento < date.today()):
         raise HTTPException(status_code=400, detail="Selecciona una clínica activa para registrarte")
 
-    tenant_reset = current_tenant_id.set(empresa.id_empresa)
+    company_id = int(empresa.id_empresa)
+    db.rollback()  # Cierra lectura pública; inicia nueva transacción con contexto RLS.
+    tenant_reset = current_tenant_id.set(company_id)
     try:
         documento = (data.documento or "").strip() or generar_documento_unico(db)
         usuario = models.Usuario(
