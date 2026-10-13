@@ -5,3 +5,8 @@ pydantic[email]
 psycopg2-binary
 python-dotenv
 fastapi-mail
+apscheduler
+bcrypt
+PyJWT
+google-api-python-client>=2.150.0
+google-auth>=2.35.0

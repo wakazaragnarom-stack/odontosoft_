@@ -1,0 +1,13 @@
+\set ON_ERROR_STOP on
+\echo 'OdontoSoft: aplicando migraciones de calendario, empresas y aislamiento multiempresa'
+\echo 'IMPORTANTE: ejecutar desde la raiz del repositorio y despues de hacer backup.'
+\echo 'Este instalador NO crea el esquema clinico base ni ejecuta la migracion legacy 001.'
+\echo 'Si la base es legacy y nunca se sincronizo, revisa y ejecuta 001_sync_legacy_postgresql.sql primero.'
+
+\i database/migrations/002_google_calendar.sql
+\i database/migrations/003_superadmin_empresas.sql
+\i database/migrations/004_multiempresa_tenant.sql
+\i database/migrations/005_empresa_documento_unico.sql
+\i database/migrations/006_postgres_rls_odontosoft.sql
+
+\echo 'Migraciones 002-006 finalizadas. Ejecuta ahora: python -m scripts.tenant_migration_report'
