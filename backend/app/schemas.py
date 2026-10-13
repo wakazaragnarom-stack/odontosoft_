@@ -97,6 +97,7 @@ class LoginResponse(BaseModel):
 # ============================================================
 
 class RegistroRequest(BaseModel):
+    id_empresa: int = Field(..., gt=0)
     correo: EmailStr
     contrasena: str = Field(..., min_length=6)
     rol: str = "Paciente"
