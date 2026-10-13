@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LockKeyhole, Mail, UserPlus, RefreshCcw, LogIn, Eye, EyeOff } from 'lucide-react';
-import { getCurrentUser, login, registroUsuario, resetPassword, solicitarReset } from '../../shared/api/client.js';
+import { getClinicasDisponibles, getCurrentUser, login, registroUsuario, resetPassword, solicitarReset } from '../../shared/api/client.js';
 
 type Props = {
   onAuthenticated: (user: any) => void;
@@ -11,6 +11,8 @@ type Mode = 'login' | 'register' | 'reset';
 export default function AuthScreen({ onAuthenticated }: Props) {
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
+  const [clinics, setClinics] = useState<Array<{id_empresa:number;nombre:string}>>([]);
+  const [selectedClinic, setSelectedClinic] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -36,6 +38,10 @@ export default function AuthScreen({ onAuthenticated }: Props) {
   }, []);
 
 
+  useEffect(() => {
+    getClinicasDisponibles().then(setClinics).catch(() => setClinics([]));
+  }, []);
+
   const submitLogin = async () => {
     setBusy(true); setError(''); setMessage('');
     try {
@@ -51,6 +57,7 @@ export default function AuthScreen({ onAuthenticated }: Props) {
     setBusy(true); setError(''); setMessage('');
     try {
       await registroUsuario({
+        id_empresa: Number(selectedClinic),
         correo: email.trim().toLowerCase(),
         contrasena: password,
         nombre: name.trim() || null,
@@ -141,6 +148,12 @@ export default function AuthScreen({ onAuthenticated }: Props) {
 
             {mode === 'register' && (
               <>
+                <label className="block text-xs font-bold text-slate-600">Selecciona la clínica donde te atenderán</label>
+                <select value={selectedClinic} onChange={e => setSelectedClinic(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-3" required>
+                  <option value="">Selecciona una clínica</option>
+                  {clinics.map(c => <option key={c.id_empresa} value={c.id_empresa}>{c.nombre}</option>)}
+                </select>
+                {clinics.length === 0 && <p className="text-xs text-amber-700">No hay clínicas activas disponibles. Un administrador debe registrar y habilitar una clínica.</p>}
                 <div className="grid sm:grid-cols-2 gap-3">
                   <input value={name} onChange={(e) => setName(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-3" placeholder="Nombre" />
                   <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border border-slate-200 rounded-xl px-3 py-3" placeholder="Apellido" />
@@ -165,7 +178,7 @@ export default function AuthScreen({ onAuthenticated }: Props) {
             )}
 
             {mode === 'login' && <button onClick={() => void submitLogin()} disabled={busy || !email || !password} className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl py-3.5 font-bold"><LogIn className="w-4 h-4" />{busy ? 'Ingresando…' : 'Iniciar sesión'}</button>}
-            {mode === 'register' && <button onClick={() => void submitRegister()} disabled={busy || !email || !password || !name || !lastName} className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl py-3.5 font-bold"><UserPlus className="w-4 h-4" />{busy ? 'Creando cuenta…' : 'Crear cuenta'}</button>}
+            {mode === 'register' && <button onClick={() => void submitRegister()} disabled={busy || !selectedClinic || !email || !password || !name || !lastName} className="w-full mt-2 inline-flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl py-3.5 font-bold"><UserPlus className="w-4 h-4" />{busy ? 'Creando cuenta…' : 'Crear cuenta'}</button>}
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm">
