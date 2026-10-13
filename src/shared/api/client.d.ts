@@ -109,3 +109,31 @@ export function getServiciosPaciente(pid: number | string): Promise<any[]>;
 export function createServicio(data: any): Promise<any>;
 export function updateServicio(id: number | string, data: any): Promise<any>;
 export function deleteServicio(id: number | string): Promise<any>;
+
+export interface EmpresaSaaS {
+  id_empresa: number;
+  nombre: string;
+  correo_contacto: string;
+  telefono?: string | null;
+  cuota_mensual: number;
+  fecha_vencimiento?: string | null;
+  fecha_ultimo_pago?: string | null;
+  estado_pago: "al_dia" | "pendiente" | "vencido";
+  estado_servicio: "activo" | "suspendido";
+}
+export function getEmpresasSaaS(): Promise<EmpresaSaaS[]>;
+export function createEmpresaSaaS(data: {
+  nombre: string;
+  correo_contacto: string;
+  telefono?: string;
+  cuota_mensual: number;
+  fecha_vencimiento?: string | null;
+}): Promise<EmpresaSaaS>;
+export function updateEmpresaSaaS(id: number | string, data: {
+  telefono?: string | null;
+  cuota_mensual?: number;
+  fecha_vencimiento?: string | null;
+  fecha_ultimo_pago?: string | null;
+  estado_pago?: "al_dia" | "pendiente" | "vencido";
+  estado_servicio?: "activo" | "suspendido";
+}): Promise<EmpresaSaaS>;
