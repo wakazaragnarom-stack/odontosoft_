@@ -28,7 +28,7 @@ if not JWT_SECRET:
 
 PUBLIC_PATHS = {
     "/", "/health", "/info", "/docs", "/redoc", "/openapi.json",
-    "/auth/login", "/auth/registro", "/auth/solicitar-reset", "/auth/reset-password",
+    "/auth/login", "/auth/registro", "/auth/clinicas-disponibles", "/auth/solicitar-reset", "/auth/reset-password",
 }
 
 MODULE_ROLES = {
