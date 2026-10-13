@@ -4,11 +4,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session, selectinload
 from typing import List
-import models
-import schemas
-from database import get_db
-from notifications import NotificationService
-from security import dentist_id_for_user, require_appointment_resource, require_patient_resource, require_roles, require_staff
+from backend.app import models
+from backend.app import schemas
+from backend.app.db.session import get_db
+from backend.app.services.notifications import NotificationService
+from backend.app.core.security import dentist_id_for_user, require_appointment_resource, require_patient_resource, require_roles, require_staff
 
 router = APIRouter(prefix="/citas", tags=["Citas"])
 

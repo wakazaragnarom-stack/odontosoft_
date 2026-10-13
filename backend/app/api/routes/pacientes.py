@@ -7,11 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-import models
-import schemas
+from backend.app import models
+from backend.app import schemas
 
-from database import get_db
-from security import dentist_patient_ids, require_patient_resource, require_staff
+from backend.app.db.session import get_db
+from backend.app.core.security import dentist_patient_ids, require_patient_resource, require_staff
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 

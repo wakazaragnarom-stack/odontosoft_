@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-import models
-import schemas
-from database import get_db
-from notifications import NotificationService
-from utils import generar_token_seguro, hash_password
+from backend.app import models
+from backend.app import schemas
+from backend.app.db.session import get_db
+from backend.app.services.notifications import NotificationService
+from backend.app.utils import generar_token_seguro, hash_password
 
 router = APIRouter(prefix="/auth", tags=["Restablecimiento de Contraseña"])
 TOKEN_EXPIRA_MINUTOS = 15

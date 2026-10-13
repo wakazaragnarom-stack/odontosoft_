@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-import models, schemas
-from database import get_db
-from security import require_roles
+from backend.app import models, schemas
+from backend.app.db.session import get_db
+from backend.app.core.security import require_roles
 
 router = APIRouter(prefix="/pagos", tags=["Pagos"])
 STAFF = Depends(require_roles("superadmin", "clinic_admin"))

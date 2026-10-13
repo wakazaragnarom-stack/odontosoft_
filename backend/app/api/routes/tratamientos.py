@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-import models
-import schemas
-from database import get_db
-from security import require_roles, require_staff
+from backend.app import models
+from backend.app import schemas
+from backend.app.db.session import get_db
+from backend.app.core.security import require_roles, require_staff
 
 router = APIRouter(prefix="/tratamientos", tags=["Tratamientos"])
 

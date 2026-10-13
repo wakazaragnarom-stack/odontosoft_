@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-import models
-import schemas
+from backend.app import models
+from backend.app import schemas
 
-from database import get_db
-from utils import (
+from backend.app.db.session import get_db
+from backend.app.utils import (
     hash_password,
     validar_correo,
     generar_documento_unico

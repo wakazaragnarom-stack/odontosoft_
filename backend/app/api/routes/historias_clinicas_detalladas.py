@@ -1,9 +1,9 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import models, schemas
-from database import get_db
-from security import require_patient_resource, require_staff
+from backend.app import models, schemas
+from backend.app.db.session import get_db
+from backend.app.core.security import require_patient_resource, require_staff
 
 router = APIRouter(prefix="/historias-clinicas-detalladas", tags=["Historias Clínicas Detalladas"])
 
