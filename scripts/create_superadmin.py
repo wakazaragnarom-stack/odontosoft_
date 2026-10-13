@@ -24,8 +24,8 @@ def main():
         raise SystemExit("El correo configurado no es válido.")
     db = SessionLocal()
     try:
-        existing_super = db.query(models.Usuario).filter(models.Usuario.rol.in_(["SuperAdmin", "superadmin"])).first()
-        if existing_super and existing_super.correo.lower() != EMAIL:
+        existing_supers = db.query(models.Usuario).filter(models.Usuario.rol.in_(["SuperAdmin", "superadmin"])).all()
+        if any(item.correo.lower() != EMAIL for item in existing_supers):
             raise SystemExit("Ya existe otro SuperAdmin. Sólo se permite uno.")
         user = db.query(models.Usuario).filter(models.Usuario.correo == EMAIL).first()
         if user and user.rol not in ("SuperAdmin", "superadmin"):

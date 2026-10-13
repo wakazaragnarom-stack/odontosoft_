@@ -226,4 +226,30 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers or {})
         if not module_allowed(request.url.path, request.state.user["role"]):
             return JSONResponse(status_code=403, content={"detail": "No tienes permisos para acceder a este módulo"})
+
+        # El usuario asociado a una empresa pierde acceso operativo si la suscripción no está al día.
+        # SuperAdmin conserva acceso exclusivo a la consola de empresas/pagos.
+        if request.state.user["role"] != "superadmin":
+            session = SessionLocal()
+            try:
+                account = session.query(models.Usuario).filter(
+                    models.Usuario.id_usuario == int(request.state.user["sub"])
+                ).first()
+                if account and account.id_empresa:
+                    company = session.query(models.Empresa).filter(
+                        models.Empresa.id_empresa == account.id_empresa
+                    ).first()
+                    if company:
+                        from datetime import date
+                        due = company.fecha_vencimiento
+                        unpaid = company.estado_pago != "al_dia"
+                        overdue = bool(due and due < date.today())
+                        suspended = company.estado_servicio != "activo"
+                        if unpaid or overdue or suspended:
+                            return JSONResponse(
+                                status_code=402,
+                                content={"detail": "Servicio suspendido por pago pendiente. Contacta a OdontoSoft para reactivar la suscripción."},
+                            )
+            finally:
+                session.close()
         return await call_next(request)
