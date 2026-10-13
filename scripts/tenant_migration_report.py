@@ -29,6 +29,15 @@ RELATIONS = (
 def main():
     db = SessionLocal()
     try:
+        is_superuser = db.execute(text(
+            "SELECT rolsuper FROM pg_roles WHERE rolname = current_user"
+        )).scalar_one()
+        if not is_superuser:
+            raise RuntimeError(
+                "La auditoría debe ejecutarse con un usuario PostgreSQL superusuario; "
+                "FORCE ROW LEVEL SECURITY oculta intencionalmente los datos a otros roles "
+                "sin un tenant activo. No se ha modificado nada."
+            )
         print("OdontoSoft — auditoría de migración multiempresa (solo lectura)")
         print("\nEmpresas registradas:")
         for row in db.execute(text(
