@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LockKeyhole, Mail, UserPlus, RefreshCcw, LogIn, Eye, EyeOff } from 'lucide-react';
 import { getCurrentUser, login, registroUsuario, resetPassword, solicitarReset } from '../../shared/api/client.js';
 
@@ -22,6 +22,19 @@ export default function AuthScreen({ onAuthenticated }: Props) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  // Los enlaces del correo abren esta SPA: /?reset_token=<token>.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const receivedToken = params.get('reset_token');
+    if (receivedToken) {
+      setToken(receivedToken);
+      setMode('reset');
+      params.delete('reset_token');
+      const query = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+    }
+  }, []);
+
 
   const submitLogin = async () => {
     setBusy(true); setError(''); setMessage('');
