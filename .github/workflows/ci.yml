@@ -20,7 +20,7 @@ jobs:
         run: npm install
       - name: Typecheck frontend
         run: npm run lint
-      - name: Build frontend and API gateway
+      - name: Build frontend
         run: npm run build
 
   backend:
@@ -36,3 +36,18 @@ jobs:
         run: pip install -r requirements.txt
       - name: Compile Python modules
         run: python -m compileall -q backend scripts main.py
+      - name: Smoke-test application imports
+        env:
+          APP_ENV: development
+          JWT_SECRET: ci-only-secret-key-do-not-use-outside-ci-123456789
+          DB_USER: odontosoft_ci
+          DB_PASSWORD: ci-only-password
+          DB_HOST: 127.0.0.1
+          DB_PORT: "5432"
+          DB_NAME: odontosoft_ci
+          MAIL_FROM: ci@odontosoft.com
+          MAIL_USERNAME: ci@odontosoft.com
+          MAIL_PASSWORD: ci-only-password
+          MAIL_PORT: "587"
+          MAIL_SERVER: smtp.gmail.com
+        run: python -c "from backend.app.main import app; assert app.title == 'OdontoSoft API'; print('OdontoSoft application imports OK')"

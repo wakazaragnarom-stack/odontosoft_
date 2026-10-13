@@ -1,7 +1,7 @@
 """Crea un usuario administrador de OdontoSoft de forma interactiva.
 
 Uso:
-    python scripts/create_admin.py
+    python -m scripts.create_admin
 
 Requiere que .env esté configurado y PostgreSQL esté disponible.
 """

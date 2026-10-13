@@ -1,38 +1,30 @@
-# Backend y seguridad — fase PostgreSQL
+# Backend y seguridad de OdontoSoft
 
-## Decisiones
+## Decisiones vigentes
 
-OdontoSoft usa PostgreSQL como única fuente de verdad. Firebase no participa en la persistencia de usuarios, pacientes, citas, historias, tratamientos, pagos ni facturas.
+- PostgreSQL es la fuente de verdad para usuarios, pacientes, citas, historias clínicas, odontogramas, tratamientos, pagos y facturas.
+- El login emite JWT Bearer tokens.
+- Las contraseñas nuevas usan bcrypt; los hashes SHA-256 heredados pueden verificarse y migrarse tras un login válido.
+- El registro público crea pacientes y no permite otorgar roles privilegiados.
+- DATABASE_URL tiene prioridad sobre variables PostgreSQL separadas.
+- CORS se configura con CORS_ORIGINS; TrustedHost puede activarse con ALLOWED_HOSTS.
+- La API no ejecuta Base.metadata.create_all() en el arranque.
+- Los routers usan dependencias centrales de backend/app/core/security.py para autorización por módulo y control de acceso a recursos clínicos.
 
-## Mejoras incorporadas
+## Capas de código
 
-1. **JWT de acceso**
-   - El login emite un Bearer token firmado.
-   - El token contiene usuario, correo, rol, emisión, expiración y `jti`.
-   - Las rutas protegidas requieren `Authorization: Bearer <token>`.
+- backend/app/api/routes: endpoints.
+- backend/app/core/security.py: JWT, roles y permisos.
+- backend/app/db/session.py: SQLAlchemy y sesiones.
+- backend/app/models.py y schemas.py: persistencia y contratos de API.
+- backend/app/services/notifications.py: envío de correo.
 
-2. **Contraseñas**
-   - Las contraseñas nuevas se almacenan con bcrypt.
-   - Los hashes SHA-256 heredados siguen siendo verificables temporalmente.
-   - Tras un login correcto, un hash heredado se convierte automáticamente a bcrypt.
+## Mejoras de seguridad pendientes
 
-3. **Autorización**
-   - Los roles heredados (`Paciente`, `Odontologo`, `Administrador`, etc.) se normalizan al modelo de permisos actual.
-   - El registro público sólo puede crear pacientes; nunca privilegios administrativos.
+- Auditoría persistente de cambios sensibles.
+- Limitación de intentos y protección contra fuerza bruta en login y recuperación.
+- Revisión recurso por recurso de las operaciones de lectura/escritura, especialmente cuando hay asociaciones entre pacientes, odontólogos y citas.
+- Pruebas automatizadas de autorización para asegurar que un paciente no acceda a datos de otra persona y un odontólogo no acceda a pacientes no asignados.
+- Validación transaccional de operaciones clínicas y financieras.
 
-4. **PostgreSQL**
-   - `DATABASE_URL` tiene prioridad sobre variables separadas.
-   - Se elimina la contraseña por defecto del código.
-   - Se desactiva `echo=True` para no volcar SQL al log.
-   - La API no ejecuta `Base.metadata.create_all()` al arrancar.
-
-5. **HTTP**
-   - CORS se controla con `CORS_ORIGINS`.
-   - `TrustedHostMiddleware` puede activarse mediante `ALLOWED_HOSTS`.
-   - Los errores de SQLAlchemy no devuelven el detalle interno de la base de datos.
-
-## Próxima capa
-
-La siguiente implementación debe llevar el control de permisos desde nivel de ruta a nivel de recurso: un paciente sólo puede consultar sus propios registros, un odontólogo sólo sus pacientes/citas autorizados y un administrador sólo los recursos de su clínica.
-
-También debe incorporarse auditoría persistente de acciones sensibles, bloqueo/rate limit de intentos de login y validación transaccional de operaciones clínicas y financieras.
+Los cambios en permisos deben acompañarse de pruebas de regresión; no se debe depender exclusivamente de ocultar botones en el frontend.

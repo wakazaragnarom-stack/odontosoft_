@@ -1,75 +1,81 @@
 # OdontoSoft
 
-OdontoSoft es un monolito modular con frontend React/TypeScript/Vite, API FastAPI y PostgreSQL como fuente única de verdad.
+OdontoSoft es una aplicación odontológica con frontend React/TypeScript/Vite, API FastAPI y PostgreSQL como única fuente de verdad.
 
 ## Arquitectura
 
-- `src/app`: composición y sesión de la aplicación.
-- `src/features`: funcionalidades de negocio del frontend (autenticación, agenda, historia clínica, odontograma, facturación y administración).
-- `src/shared`: cliente HTTP, tipos, componentes reutilizables y utilidades compartidas.
-- `backend/app/api/routes`: routers HTTP, validación de solicitudes y respuestas.
-- `backend/app/core`: seguridad y componentes transversales.
-- `backend/app/db`: motor SQLAlchemy y sesiones de PostgreSQL.
-- `backend/app/models.py`: modelos ORM.
-- `backend/app/schemas.py` y `auth_schemas.py`: contratos Pydantic.
-- `backend/app/services`: integraciones y servicios (por ejemplo, correo).
-- `database/migrations`: migraciones SQL explícitas; la API no crea tablas automáticamente.
-- `scripts`: tareas operativas, como crear el primer administrador.
-- `docs/ARQUITECTURA.md`: reglas, responsabilidades y flujo de dependencias.
+El proyecto está organizado como un **monolito modular por capas**:
 
-Los módulos raíz `database.py`, `models.py`, `schemas.py`, `auth_schemas.py`, `security.py`, `utils.py` y `notifications.py` son fachadas de compatibilidad para importaciones heredadas. La implementación canónica está en `backend/app`.
+- src/app: composición de la aplicación y sesión.
+- src/features: autenticación, backoffice, agenda, historia clínica, odontograma, facturación y dashboard.
+- src/shared: cliente HTTP, tipos, componentes y utilidades compartidas.
+- backend/app/api/routes: endpoints HTTP agrupados por módulo.
+- backend/app/core: seguridad, JWT y autorización.
+- backend/app/db: conexión, motor y sesiones de PostgreSQL.
+- backend/app/models.py: modelos SQLAlchemy.
+- backend/app/schemas.py y auth_schemas.py: contratos Pydantic.
+- backend/app/services: integraciones, como el envío de correos.
+- database/migrations: cambios de esquema explícitos.
+- scripts: tareas operativas, por ejemplo crear el primer administrador.
+- docs/ARQUITECTURA.md: mapa, responsabilidades y reglas de dependencias.
+
+La implementación Python canónica está dentro de backend/app. En la raíz se mantiene main.py como entrada de compatibilidad para que siga funcionando el comando uvicorn main:app; el resto de módulos se importa desde el paquete backend.app.
 
 ## Requisitos
 
 - Node.js y npm.
-- Python 3.12 o una versión compatible con las dependencias.
-- PostgreSQL iniciado, con la base de datos existente y el esquema alineado.
-- Un archivo `.env` local en la raíz. No subas este archivo a GitHub.
+- Python 3.12 o una versión compatible con las dependencias del proyecto.
+- PostgreSQL iniciado, una base de datos existente y el esquema sincronizado.
+- Un archivo .env local. No subas secretos a GitHub.
 
-## Configuración local
+## Configurar el entorno
 
-Copia la plantilla y completa las variables de PostgreSQL, JWT y, si se van a enviar correos, SMTP:
+Desde la raíz del proyecto, crea tu configuración a partir de la plantilla:
 
-```powershell
-Copy-Item .env.example .env
-```
+    Copy-Item .env.example .env
 
-Usa `DATABASE_URL` o las variables `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` y `DB_NAME`. No incluyas credenciales reales en documentación ni en el repositorio.
+Completa las variables PostgreSQL/JWT. Puedes usar DATABASE_URL o las variables DB_USER, DB_PASSWORD, DB_HOST, DB_PORT y DB_NAME. Para enviar correos reales, configura credenciales SMTP válidas; la configuración de ejemplo sólo permite inicializar el backend.
 
-## Iniciar en desarrollo
+La API no crea tablas automáticamente al arrancar. Usa las migraciones SQL revisadas y realiza una copia de seguridad antes de cambiar una base de datos con datos reales.
 
-Terminal 1 — backend (desde la raíz):
+## Iniciar el proyecto
 
-```powershell
-python -m pip install -r requirements.txt
-python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
-```
+Abre dos terminales desde la raíz.
 
-También se conserva el comando legado `python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload`.
+**Terminal 1 — backend:**
 
-Terminal 2 — frontend:
+    python -m pip install -r requirements.txt
+    python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 
-```powershell
-npm install
-npm run dev
-```
+También se conserva el comando compatible:
 
-Abre `http://localhost:5173`; la documentación de la API está en `http://localhost:8000/docs`.
+    python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+
+**Terminal 2 — frontend:**
+
+    npm install
+    npm run dev
+
+Aplicación: http://localhost:5173
+
+Documentación de la API: http://localhost:8000/docs
 
 ## Primer administrador
 
-Con PostgreSQL configurado y el backend ya conectado a la base de datos:
+Con PostgreSQL configurado y accesible, ejecuta desde la raíz:
 
-```powershell
-python -m scripts.create_admin
-```
+    python -m scripts.create_admin
 
-Este comando crea la cuenta inicial; no se necesita repetir para cada inicio del sistema. No uses el registro público para crear usuarios privilegiados.
+Este comando sirve para crear la primera cuenta administrativa de la base de datos; no se repite cada vez que abres el sistema.
 
-## Validación local
+## Validar cambios
 
-```powershell
-npm run lint
-npm run build
-python -m compileall -q backend scripts main.py
-```
+    npm run lint
+    npm run build
+    python -m compileall -q backend scripts main.py
+
+GitHub Actions también comprueba el tipado, el build de frontend, la compilación Python y la importación de la aplicación.
+
+## Seguridad de secretos
+
+.env, contraseñas y claves privadas deben permanecer fuera del repositorio. .env.example es sólo una plantilla sin credenciales reales.

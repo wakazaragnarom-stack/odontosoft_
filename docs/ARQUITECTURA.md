@@ -1,77 +1,80 @@
 # Arquitectura de OdontoSoft
 
-## Patrón
+## Patrón arquitectónico
 
-OdontoSoft se estructura como un **monolito modular por capas**. Frontend y backend se despliegan como procesos separados durante el desarrollo, pero el repositorio agrupa ambos. PostgreSQL es la fuente de verdad; el frontend mantiene solo estado de presentación.
+OdontoSoft sigue un **monolito modular por capas**. El frontend y el backend funcionan como procesos separados en desarrollo; el backend expone una API HTTP y PostgreSQL es la fuente única de persistencia.
 
-## Backend
+## Estructura
 
-```text
-backend/app/
-├── main.py                 # Composición FastAPI, middleware y montaje de rutas
-├── api/routes/             # Adaptadores HTTP por módulo de negocio
-├── core/security.py        # JWT, roles y autorización por recurso
-├── db/session.py           # Engine, Base, SessionLocal y get_db
-├── models.py               # Entidades SQLAlchemy
-├── schemas.py              # Contratos Pydantic de la API
-├── auth_schemas.py         # Contratos de autenticación
-├── services/notifications.py # Adaptador para correo
-└── utils.py                # Funciones auxiliares compartidas
-```
+    odontosoft_/
+    ├── backend/
+    │   └── app/
+    │       ├── main.py
+    │       ├── api/routes/
+    │       ├── core/security.py
+    │       ├── db/session.py
+    │       ├── models.py
+    │       ├── schemas.py
+    │       ├── auth_schemas.py
+    │       ├── services/notifications.py
+    │       └── utils.py
+    ├── src/
+    │   ├── app/
+    │   ├── features/
+    │   │   ├── auth/
+    │   │   ├── backoffice/
+    │   │   ├── dashboard/
+    │   │   ├── appointments/
+    │   │   ├── clinical/
+    │   │   ├── odontogram/
+    │   │   └── billing/
+    │   ├── shared/
+    │   │   ├── api/
+    │   │   ├── components/
+    │   │   ├── lib/
+    │   │   └── types.ts
+    │   ├── styles/
+    │   └── main.tsx
+    ├── database/
+    │   ├── migrations/
+    │   └── verify_schema.sql
+    ├── scripts/
+    ├── docs/
+    └── .github/workflows/
 
-Reglas de dependencia:
+## Responsabilidades del backend
 
-1. Las rutas son la capa de entrada HTTP y usan los esquemas y servicios/modelos necesarios.
-2. La sesión de base de datos se define una sola vez en `db/session.py`.
-3. Los modelos ORM no abren sesiones ni dependen de las rutas.
-4. La autenticación/autorización se concentra en `core/security.py`; no debe duplicarse por módulo.
-5. La persistencia usa PostgreSQL. No se crean tablas implícitamente en el arranque; los cambios de esquema se gestionan mediante migraciones SQL revisadas.
-6. Las fachadas Python de la raíz solo mantienen compatibilidad temporal con imports antiguos; el código nuevo debe importar desde `backend.app`.
+- **API/routes:** adaptan las solicitudes HTTP, validan entradas mediante esquemas, aplican dependencias de autorización y coordinan operaciones de datos.
+- **Core:** autenticación JWT, normalización de roles y políticas de acceso.
+- **DB:** configuración de SQLAlchemy, motor, sesiones y dependencia get_db.
+- **Models:** mapeo ORM del esquema PostgreSQL existente.
+- **Schemas:** contratos de entrada/salida; no deben mezclar detalles de UI.
+- **Services:** integraciones externas, como SMTP, y lógica reutilizable que no pertenece al protocolo HTTP.
+- **Utils:** utilidades comunes. La lógica nueva debe colocarse en el módulo de negocio adecuado cuando deje de ser una utilidad general.
 
-## Frontend
+Los routers actuales conservan consultas SQLAlchemy dentro de algunos endpoints. Para nuevas funcionalidades complejas, extrae la lógica de negocio a servicios y la consulta/reutilización de datos a repositorios; no copies consultas entre routers.
 
-```text
-src/
-├── app/                    # Sesión y composición de la aplicación
-├── features/
-│   ├── auth/               # Login, registro público y recuperación
-│   ├── backoffice/         # Navegación por rol y composición de módulos
-│   ├── dashboard/
-│   ├── appointments/
-│   ├── clinical/
-│   ├── odontogram/
-│   └── billing/
-├── shared/
-│   ├── api/                # Cliente HTTP y declaraciones TypeScript
-│   ├── components/         # UI reusable (Panel, tabla, CRUD genérico)
-│   ├── lib/                # Adaptadores y utilidades de dominio compartidas
-│   └── types.ts            # Tipos comunes del frontend
-├── styles/                 # CSS global
-└── main.tsx                # Punto de entrada Vite
-```
+## Responsabilidades del frontend
 
-Reglas frontend:
+- **App:** composición, sesión y punto de entrada de la aplicación.
+- **Features:** componentes propios de cada módulo funcional.
+- **Shared API:** único cliente HTTP, adjunta el JWT y normaliza errores.
+- **Shared components:** tabla, formularios genéricos y piezas visuales reutilizables.
+- **Shared types/lib:** contratos y adaptadores compartidos; la memoria del navegador no reemplaza PostgreSQL.
 
-- Las funcionalidades viven en `features/`; la composición de la aplicación vive en `app/`.
-- El acceso HTTP debe pasar por el cliente de `shared/api/client.js`, que adjunta el JWT y normaliza errores.
-- Los tipos y componentes visuales compartidos no deben duplicarse dentro de cada funcionalidad.
-- Los estados clínicos persistentes se leen y escriben mediante la API, no mediante almacenamiento local como fuente de verdad.
-- Cada componente de negocio debe mostrar los errores de API de forma visible y no suponer que una respuesta vacía significa que el registro existe.
+## Reglas para contribuir
 
-## Base de datos y operaciones
+1. Importa backend desde backend.app...; no vuelvas a crear módulos Python planos en la raíz.
+2. Registra cada router nuevo en backend/app/main.py.
+3. Centraliza los permisos en backend/app/core/security.py y aplica controles por recurso cuando una ruta recibe un identificador de paciente/cita.
+4. No crees tablas al iniciar. Incluye cambios de esquema en database/migrations y actualiza database/verify_schema.sql cuando corresponda.
+5. En frontend, coloca cada módulo nuevo en src/features/<modulo>/ y comparte API/tipos/UI mediante src/shared/.
+6. Añade validaciones de CI para importación, tipado y build.
+7. Mantén .env fuera de GitHub; modifica sólo .env.example con variables de ejemplo sin secretos.
+8. El punto de entrada main.py de la raíz se conserva sólo para compatibilidad de ejecución.
 
-- `database/migrations`: cambios explícitos sobre el esquema PostgreSQL.
-- `database/verify_schema.sql`: validación posterior a la migración.
-- `scripts/create_admin.py`: bootstrap de la primera cuenta administrativa.
-- `docs/`: documentación técnica y de seguridad.
-- `.env.example`: plantilla; `.env` es local y nunca debe versionarse.
+## Comandos principales
 
-## Guía para nuevos módulos
-
-1. Añade un router en `backend/app/api/routes/`.
-2. Define o reutiliza esquemas en `backend/app/schemas.py`.
-3. Coloca integraciones externas en `backend/app/services/`, no dentro del componente React.
-4. Registra el router en `backend/app/main.py` y revisa las políticas de roles en `backend/app/core/security.py`.
-5. Si cambia el esquema, añade migración SQL y actualiza `database/verify_schema.sql`.
-6. Añade los componentes del frontend bajo `src/features/<modulo>/` y registra la navegación desde `src/features/backoffice/BackOffice.tsx`.
-7. Ejecuta typecheck, build y compilación Python antes de integrar el cambio.
+    python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+    npm run dev
+    python -m scripts.create_admin
