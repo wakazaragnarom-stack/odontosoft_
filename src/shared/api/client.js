@@ -24,6 +24,7 @@ export const getCurrentUser = () => request("GET", "/auth/me");
 export const solicitarReset = (correo) => request("POST", "/auth/solicitar-reset", { correo });
 export const resetPassword = (data) => request("POST", "/auth/reset-password", data);
 export const registroUsuario = (data) => request("POST", "/auth/registro", data);
+export const getClinicasDisponibles = () => request("GET", "/auth/clinicas-disponibles");
 export const logout = () => clearAccessToken();
 export const getUsuarios = () => request("GET", "/usuarios");
 export const getUsuario = (id) => request("GET", `/usuarios/${id}`);
