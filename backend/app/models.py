@@ -121,6 +121,9 @@ class Paciente(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_paciente = Column(
         Integer,
         primary_key=True,
@@ -336,6 +339,9 @@ class Consultorio(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_consultorio = Column(
         Integer,
         primary_key=True,
@@ -382,6 +388,9 @@ class Odontologo(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_odontologo = Column(
         Integer,
         primary_key=True,
@@ -462,6 +471,9 @@ class HistoriaClinica(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_historia = Column(
         Integer,
         primary_key=True,
@@ -513,6 +525,9 @@ class Odontograma(Base):
 
     __table_args__ = {"extend_existing": True}
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_odontograma = Column(Integer, primary_key=True, index=True)
 
     id_paciente = Column(
@@ -540,6 +555,9 @@ class HistoriaClinicaDetallada(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_historia_detallada = Column(Integer, primary_key=True, index=True)
 
     id_paciente = Column(
@@ -572,6 +590,9 @@ class Cita(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_cita = Column(
         Integer,
         primary_key=True,
@@ -681,6 +702,9 @@ class Tratamiento(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_tratamiento = Column(
         Integer,
         primary_key=True,
@@ -732,6 +756,9 @@ class Recordatorio(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_recordatorio = Column(
         Integer,
         primary_key=True,
@@ -781,6 +808,9 @@ class Pago(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_pago = Column(
         Integer,
         primary_key=True,
@@ -847,6 +877,9 @@ class Factura(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id_factura = Column(
         Integer,
         primary_key=True,
@@ -901,6 +934,9 @@ class Rol(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id = Column(
         Integer,
         primary_key=True,
@@ -937,6 +973,9 @@ class Proveedor(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id = Column(
         Integer,
         primary_key=True,
@@ -982,6 +1021,9 @@ class Servicio(Base):
         "extend_existing": True
     }
 
+
+    # Aislamiento multiempresa: lo asigna el backend, nunca el cliente.
+    id_empresa = Column(Integer, ForeignKey("empresa_odontosoft.id_empresa", ondelete="RESTRICT"), nullable=True, index=True)
     id = Column(
         Integer,
         primary_key=True,

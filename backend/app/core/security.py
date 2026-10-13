@@ -13,7 +13,7 @@ from fastapi import HTTPException, Request, status, Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from backend.app.db.session import SessionLocal
+from backend.app.db.session import SessionLocal, current_tenant_id
 from backend.app import models
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -227,29 +227,36 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         if not module_allowed(request.url.path, request.state.user["role"]):
             return JSONResponse(status_code=403, content={"detail": "No tienes permisos para acceder a este módulo"})
 
-        # El usuario asociado a una empresa pierde acceso operativo si la suscripción no está al día.
-        # SuperAdmin conserva acceso exclusivo a la consola de empresas/pagos.
-        if request.state.user["role"] != "superadmin":
-            session = SessionLocal()
-            try:
-                account = session.query(models.Usuario).filter(
-                    models.Usuario.id_usuario == int(request.state.user["sub"])
-                ).first()
-                if account and account.id_empresa:
-                    company = session.query(models.Empresa).filter(
-                        models.Empresa.id_empresa == account.id_empresa
-                    ).first()
-                    if company:
-                        from datetime import date
-                        due = company.fecha_vencimiento
-                        unpaid = company.estado_pago != "al_dia"
-                        overdue = bool(due and due < date.today())
-                        suspended = company.estado_servicio != "activo"
-                        if unpaid or overdue or suspended:
-                            return JSONResponse(
-                                status_code=402,
-                                content={"detail": "Servicio suspendido por pago pendiente. Contacta a OdontoSoft para reactivar la suscripción."},
-                            )
-            finally:
-                session.close()
-        return await call_next(request)
+        # SuperAdmin solo opera en la consola SaaS; no recibe contexto clínico.
+        if request.state.user["role"] == "superadmin":
+            return await call_next(request)
+
+        # La empresa se resuelve desde PostgreSQL, nunca desde el cliente ni el token.
+        session = SessionLocal()
+        try:
+            account = session.query(models.Usuario).filter(
+                models.Usuario.id_usuario == int(request.state.user["sub"])
+            ).first()
+            if not account:
+                return JSONResponse(status_code=401, content={"detail": "La cuenta ya no existe"})
+            if not account.id_empresa:
+                return JSONResponse(status_code=403, content={"detail": "Tu usuario todavía no está asociado a una empresa. Contacta al administrador de OdontoSoft."})
+            company_id = int(account.id_empresa)
+            company = session.query(models.Empresa).filter(models.Empresa.id_empresa == company_id).first()
+            if not company:
+                return JSONResponse(status_code=403, content={"detail": "La empresa asociada no existe"})
+            from datetime import date
+            due = company.fecha_vencimiento
+            unpaid = company.estado_pago != "al_dia"
+            overdue = bool(due and due < date.today())
+            suspended = company.estado_servicio != "activo"
+            if unpaid or overdue or suspended:
+                return JSONResponse(status_code=402, content={"detail": "Servicio suspendido por pago pendiente. Contacta a OdontoSoft para reactivar la suscripción."})
+        finally:
+            session.close()
+
+        tenant_token = current_tenant_id.set(company_id)
+        try:
+            return await call_next(request)
+        finally:
+            current_tenant_id.reset(tenant_token)
