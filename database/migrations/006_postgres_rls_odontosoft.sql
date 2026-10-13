@@ -6,7 +6,7 @@ BEGIN;
 -- ni se le asignan automáticamente datos clínicos de clientes.
 INSERT INTO empresa_odontosoft
   (nombre, correo_contacto, cuota_mensual, estado_pago, estado_servicio)
-SELECT 'OdontoSoft', 'admin@odontosoft.co', 0, 'al_dia', 'activo'
+SELECT 'OdontoSoft', 'darekpumajoseph@gmail.com', 0, 'al_dia', 'activo'
 WHERE NOT EXISTS (
   SELECT 1 FROM empresa_odontosoft WHERE lower(trim(nombre)) = 'odontosoft'
 );
