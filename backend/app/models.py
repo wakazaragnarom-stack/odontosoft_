@@ -142,7 +142,6 @@ class Paciente(Base):
 
     documento = Column(
         String(20),
-        unique=True,
         nullable=False
     )
 
@@ -945,8 +944,7 @@ class Rol(Base):
 
     nombre = Column(
         String(100),
-        nullable=False,
-        unique=True
+        nullable=False
     )
 
     descripcion = Column(

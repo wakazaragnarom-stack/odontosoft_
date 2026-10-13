@@ -3,7 +3,7 @@ import os
 from contextvars import ContextVar
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import declarative_base, sessionmaker, with_loader_criteria, Session
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import InvalidRequestError
@@ -43,6 +43,17 @@ def _tenant_models():
         mapper.class_ for mapper in Base.registry.mappers
         if hasattr(mapper.class_, "id_empresa") and mapper.class_.__name__ != "Empresa"
     ]
+
+
+@event.listens_for(Session, "after_begin")
+def _set_postgres_tenant_context(session, transaction, connection):
+    """Configura el tenant también en PostgreSQL; RLS protege SQL ORM y SQL directo."""
+    tenant_id = current_tenant_id.get()
+    if tenant_id is not None:
+        connection.execute(
+            text("SELECT set_config('app.tenant_id', :tenant_id, true)"),
+            {"tenant_id": str(int(tenant_id))},
+        )
 
 
 @event.listens_for(Session, "do_orm_execute")
