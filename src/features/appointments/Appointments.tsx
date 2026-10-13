@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus } from 'lucide-react';
 import { createCita, getCitas, getCitasPaciente, getConsultorios, getOdontologos, getPacientes, updateEstadoCita } from '../../shared/api/client.js';
 import { Card, Page } from '../../shared/components/ui';
 
