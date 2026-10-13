@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Building2, LogOut, Plus, RefreshCw, ShieldCheck, Ban, CheckCircle2 } from 'lucide-react';
 import { createEmpresaSaaS, getEmpresasSaaS, updateEmpresaSaaS } from '../../shared/api/client.js';
 import type { User } from '../../shared/types';
@@ -18,7 +18,7 @@ export default function SuperAdmin({ user, onLogout }: Props) {
   const [form, setForm] = useState({ nombre: '', correo_contacto: '', telefono: '', cuota_mensual: '0', fecha_vencimiento: '' });
   const load = async () => { setBusy(true); setError(''); try { setItems(await getEmpresasSaaS()); } catch (e: any) { setError(e.message || 'No se pudieron cargar las empresas'); } finally { setBusy(false); } };
   useEffect(() => { void load(); }, []);
-  const create = async (e: React.FormEvent) => {
+  const create = async (e: FormEvent) => {
     e.preventDefault(); setError(''); setNotice('');
     try { await createEmpresaSaaS({ ...form, cuota_mensual: Number(form.cuota_mensual), fecha_vencimiento: form.fecha_vencimiento || null }); setForm({ nombre: '', correo_contacto: '', telefono: '', cuota_mensual: '0', fecha_vencimiento: '' }); setNotice('Empresa registrada.'); await load(); }
     catch (err: any) { setError(err.message || 'No se pudo registrar la empresa'); }
