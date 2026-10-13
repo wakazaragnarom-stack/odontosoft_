@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, AlertCircle, Check, Save, Search, Stethoscope } from 'lucide-react';
-import { getPaciente, getPacientes, getOdontograma, updateOdontograma } from '../api.js';
+import { getPaciente, getPacientes, getOdontograma, updateOdontograma } from '../../shared/api/client.js';
 
 type UserContext = { role: string; id_paciente?: number; id_odontologo?: number; email?: string };
 type Condition =

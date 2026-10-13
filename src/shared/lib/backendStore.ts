@@ -8,7 +8,7 @@ import {
   updateOdontograma,
   getHistoriaDetallada,
   updateHistoriaDetallada,
-} from '../api.js';
+} from '../api/client.js';
 import type { Appointment, DentistProfile, PatientRecord, Proveedor, Tratamiento } from '../types';
 
 const apiNumber = (value: unknown): number => {

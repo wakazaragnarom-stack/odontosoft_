@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LockKeyhole, Mail, UserPlus, RefreshCcw, LogIn, Eye, EyeOff } from 'lucide-react';
-import { getCurrentUser, login, registroUsuario, resetPassword, solicitarReset } from '../api.js';
+import { getCurrentUser, login, registroUsuario, resetPassword, solicitarReset } from '../../shared/api/client.js';
 
 type Props = {
   onAuthenticated: (user: any) => void;

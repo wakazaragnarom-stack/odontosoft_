@@ -1,87 +1,75 @@
-# OdontoSoft — Unificación funcional
+# OdontoSoft
 
-OdontoSoft integra un frontend React/TypeScript con un backend FastAPI existente y mantiene **PostgreSQL como única fuente de verdad y persistencia**.
-
-## Estructura
-
-- `src/`: aplicación React, cliente HTTP y estado de presentación.
-- `docs/`: documentación técnica.
-- `main.py` y módulos `.py`: backend FastAPI/SQLAlchemy.
-- `.github/workflows/`: CI de frontend y backend.
+OdontoSoft es un monolito modular con frontend React/TypeScript/Vite, API FastAPI y PostgreSQL como fuente única de verdad.
 
 ## Arquitectura
 
-Frontend: React + TypeScript + Vite.
+- `src/app`: composición y sesión de la aplicación.
+- `src/features`: funcionalidades de negocio del frontend (autenticación, agenda, historia clínica, odontograma, facturación y administración).
+- `src/shared`: cliente HTTP, tipos, componentes reutilizables y utilidades compartidas.
+- `backend/app/api/routes`: routers HTTP, validación de solicitudes y respuestas.
+- `backend/app/core`: seguridad y componentes transversales.
+- `backend/app/db`: motor SQLAlchemy y sesiones de PostgreSQL.
+- `backend/app/models.py`: modelos ORM.
+- `backend/app/schemas.py` y `auth_schemas.py`: contratos Pydantic.
+- `backend/app/services`: integraciones y servicios (por ejemplo, correo).
+- `database/migrations`: migraciones SQL explícitas; la API no crea tablas automáticamente.
+- `scripts`: tareas operativas, como crear el primer administrador.
+- `docs/ARQUITECTURA.md`: reglas, responsabilidades y flujo de dependencias.
 
-Backend: FastAPI + SQLAlchemy.
+Los módulos raíz `database.py`, `models.py`, `schemas.py`, `auth_schemas.py`, `security.py`, `utils.py` y `notifications.py` son fachadas de compatibilidad para importaciones heredadas. La implementación canónica está en `backend/app`.
 
-Persistencia: PostgreSQL existente.
+## Requisitos
 
-Autenticación: JWT + bcrypt, incluyendo migración transparente de hashes SHA-256 heredados.
+- Node.js y npm.
+- Python 3.12 o una versión compatible con las dependencias.
+- PostgreSQL iniciado, con la base de datos existente y el esquema alineado.
+- Un archivo `.env` local en la raíz. No subas este archivo a GitHub.
 
-Seguridad: CORS configurable, Trusted Host opcional, autorización por módulo y controles de acceso a recursos clínicos y administrativos.
+## Configuración local
 
-## Flujo clínico
+Copia la plantilla y completa las variables de PostgreSQL, JWT y, si se van a enviar correos, SMTP:
 
-`Paciente → Cita → Atención → Historia clínica → Odontograma → Tratamiento → Pago → Factura`
+```powershell
+Copy-Item .env.example .env
+```
 
-Las operaciones definitivas pasan por FastAPI y persisten en PostgreSQL. El estado React es una representación/cache y no reemplaza la base de datos.
+Usa `DATABASE_URL` o las variables `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` y `DB_NAME`. No incluyas credenciales reales en documentación ni en el repositorio.
 
-## Desarrollo
+## Iniciar en desarrollo
 
-### Frontend
+Terminal 1 — backend (desde la raíz):
 
-```bash
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+También se conserva el comando legado `python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload`.
+
+Terminal 2 — frontend:
+
+```powershell
 npm install
 npm run dev
 ```
 
-### Backend
+Abre `http://localhost:5173`; la documentación de la API está en `http://localhost:8000/docs`.
 
-Configura las variables de entorno de PostgreSQL y JWT y ejecuta:
+## Primer administrador
 
-```bash
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
+Con PostgreSQL configurado y el backend ya conectado a la base de datos:
+
+```powershell
+python -m scripts.create_admin
 ```
 
-La aplicación no crea tablas automáticamente al arrancar.
+Este comando crea la cuenta inicial; no se necesita repetir para cada inicio del sistema. No uses el registro público para crear usuarios privilegiados.
 
-## Validación
+## Validación local
 
-```bash
-npm install
+```powershell
 npm run lint
 npm run build
-pip install -r requirements.txt
-python -m compileall -q *.py
-```
-
-## Seguridad de secretos
-
-`.env` no forma parte del repositorio. Usa `.env.example` como plantilla y configura los secretos mediante variables de entorno o el proveedor de despliegue.
-
-## Acceso web
-
-La aplicación inicia con una pantalla de autenticación JWT. Los pacientes pueden registrarse desde la propia interfaz; los administradores pueden crear usuarios desde el panel y también existe un bootstrap local para el primer administrador:
-
-```bash
-python scripts/create_admin.py
-```
-
-Después de autenticar, el menú se adapta al rol y expone los módulos que el backend autoriza. Los perfiles de paciente y odontólogo reciben su identificador asociado desde `/auth/me` para poder consultar sus recursos sin saltarse las reglas de acceso.
-
-Frontend:
-```bash
-npm install
-npm run dev
-```
-
-Backend:
-```bash
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-Swagger:
-```
-http://localhost:8000/docs
+python -m compileall -q backend scripts main.py
 ```

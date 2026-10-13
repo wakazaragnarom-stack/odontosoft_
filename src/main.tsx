@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import UnifiedApp from './UnifiedApp.tsx';
+import UnifiedApp from './app/UnifiedApp.tsx';
 import './index.css';
 
 const root = document.getElementById('root');

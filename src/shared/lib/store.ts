@@ -21,7 +21,7 @@ import {
   createTratamiento as apiCreateTratamiento,
   updateEstadoCita,
   updateOdontograma,
-} from '../api.js';
+} from '../api/client.js';
 
 export interface StoreState {
   tenants: Tenant[];

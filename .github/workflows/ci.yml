@@ -35,4 +35,4 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r requirements.txt
       - name: Compile Python modules
-        run: python -m compileall -q *.py
+        run: python -m compileall -q backend scripts main.py
