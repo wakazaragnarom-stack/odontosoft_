@@ -5,7 +5,6 @@ import { Card, Page } from '../../shared/components/ui';
 
 const localDate = (date: Date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 const nextState: Record<string, string> = { 'Pendiente': 'Confirmada', 'Confirmada': 'Llegó', 'Llegó': 'En curso', 'En curso': 'Completada' };
-const hourText = (hour: number) => String(hour).padStart(2, '0') + ':00';
 
 export default function Appointments({ user }: any) {
   const [rows, setRows] = useState<any[]>([]);
