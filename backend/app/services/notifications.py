@@ -4,20 +4,25 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuración de FastMail (Gmail)
-mail_config = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME", ""),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", ""),
-    MAIL_FROM=os.getenv("MAIL_FROM", ""),
-    MAIL_PORT=int(os.getenv("MAIL_PORT", 587)),
-    MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
-    
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True
-    
-)
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500/frontend/html")
+# Configuración SMTP diferida: permite iniciar el backend aunque falten credenciales.
+def build_mail_config():
+    username = os.getenv("MAIL_USERNAME", "").strip()
+    password = os.getenv("MAIL_PASSWORD", "").strip()
+    sender = os.getenv("MAIL_FROM", "").strip()
+    if not all((username, password, sender)):
+        raise RuntimeError("Configura MAIL_USERNAME, MAIL_PASSWORD y MAIL_FROM en .env")
+    return ConnectionConfig(
+        MAIL_USERNAME=username,
+        MAIL_PASSWORD=password,
+        MAIL_FROM=sender,
+        MAIL_PORT=int(os.getenv("MAIL_PORT", "587")),
+        MAIL_SERVER=os.getenv("MAIL_SERVER", "smtp.gmail.com"),
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+        USE_CREDENTIALS=True,
+    )
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 class NotificationService:
 
@@ -30,7 +35,7 @@ class NotificationService:
             body=body_html,
             subtype=MessageType.html
         )
-        fm = FastMail(mail_config)
+        fm = FastMail(build_mail_config())
         await fm.send_message(message)
 
     
@@ -92,7 +97,7 @@ class NotificationService:
         )
 
         try:
-            fm = FastMail(mail_config)
+            fm = FastMail(build_mail_config())
             await fm.send_message(message)
             return True
         except Exception as e:
@@ -153,7 +158,7 @@ class NotificationService:
         )
 
         try:
-            fm = FastMail(mail_config)
+            fm = FastMail(build_mail_config())
             await fm.send_message(message)
             return True
         except Exception as e:
